@@ -10,7 +10,6 @@
 
 // For now, this is a placeholder that will be replaced when Garaga verifiers are generated
 
-use core::array::ArrayTrait;
 
 /// Placeholder verifier function
 /// This will be replaced with the actual Garaga-generated verifier
