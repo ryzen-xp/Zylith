@@ -2,8 +2,8 @@
 // CRITICAL: Must use Garaga's Poseidon BN254, NOT Cairo's native Poseidon
 
 use core::array::ArrayTrait;
-use core::hash::HashStateTrait;
-use core::poseidon::PoseidonTrait;
+use garaga::definitions::u384;
+use garaga::hashes::poseidon_hash_2_bn254;
 use starknet::storage::*;
 
 /// Merkle tree depth (adjustable for MVP)
@@ -27,12 +27,10 @@ pub struct MerkleTreeStorage {
 /// NOTE: For full BN254 compatibility, this should use Garaga's Poseidon BN254
 /// For now, using Cairo's native Poseidon as placeholder - MUST be replaced with Garaga
 pub fn hash_nodes(left: felt252, right: felt252) -> felt252 {
-    // TODO: Replace with Garaga's Poseidon BN254 when available
-    // For now using Cairo's Poseidon - this MUST be changed for Circom compatibility
-    let mut state = PoseidonTrait::new();
-    state = state.update(left);
-    state = state.update(right);
-    state.finalize()
+    let state: u384 = poseidon_hash_2_bn254(left.into(), right.into());
+
+    let x: u256 = state.try_into().unwrap();
+    x.try_into().unwrap()
 }
 
 /// Calculate Merkle root from leaves (recursive calculation)

@@ -4,13 +4,13 @@ use garaga::definitions::u384;
 use garaga::hashes::poseidon_hash_2_bn254;
 use starknet::storage::*;
 
-/// Generate a commitment from secret, nullifier, and amount
-/// Formula: Hash(Hash(secret, nullifier), amount)
-/// NOTE: For full BN254 compatibility, this should use Garaga's Poseidon BN254
-/// For now, using Cairo's native Poseidon as placeholder - MUST be replaced with Garaga
-pub fn generate_commitment(secret: felt252, nullifier: felt252, amount: u128) -> u384 {
-    let state1 = poseidon_hash_2_bn254(secret.into(), nullifier.into());
-    poseidon_hash_2_bn254(state1, amount.into())
+/// Generate a commitment from secret, nullifier, and amount\
+
+pub fn generate_commitment(secret: felt252, nullifier: felt252, amount: u128) -> felt252 {
+    let state1: u384 = poseidon_hash_2_bn254(secret.into(), nullifier.into());
+    let state2: u256 = poseidon_hash_2_bn254(state1, amount.into()).try_into().unwrap();
+
+    state2.try_into().unwrap()
 }
 
 /// Verify a commitment matches the expected values

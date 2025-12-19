@@ -172,7 +172,7 @@ pub mod Zylith {
         ) -> (i128, i128) {
             // Step 1 - Verify ZK proof using Garaga verifier
             // TODO: Uncomment when Garaga verifier is generated
-            
+
             // let is_valid = self.verify_swap_proof(proof.into());
             // assert!(is_valid, "Invalid_ZK_Proof");
 
@@ -230,7 +230,7 @@ pub mod Zylith {
         ) {
             // Step 1 - Verify ZK proof using Garaga verifier
             // TODO: Uncomment when Garaga verifier is generated
-            
+
             // let is_valid = self.verify_withdraw_proof(proof.into());
             // assert!(is_valid, "Invalid ZK proof");
 
