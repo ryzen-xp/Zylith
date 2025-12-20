@@ -11,8 +11,16 @@ use zylith::privacy::commitment;
 fn deploy_zylith() -> IZylithDispatcher {
     let contract = declare("Zylith").unwrap().contract_class();
     let owner: ContractAddress = 1.try_into().unwrap();
+    let membership_verifier: ContractAddress = 2.try_into().unwrap();
+    let swap_verifier: ContractAddress = 3.try_into().unwrap();
+    let withdraw_verifier: ContractAddress = 4.try_into().unwrap();
+
     let mut constructor_args = array![];
     constructor_args.append(owner.into());
+    constructor_args.append(membership_verifier.into());
+    constructor_args.append(swap_verifier.into());
+    constructor_args.append(withdraw_verifier.into());
+
     let (contract_address, _) = contract.deploy(@constructor_args).unwrap();
     IZylithDispatcher { contract_address }
 }
