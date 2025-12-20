@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 env:
-  SCARB_VERSION: "2.11.0"
+  SCARB_VERSION: "2.11.4"
   SNFORGE_VERSION: "0.50.0"
 
 jobs:
