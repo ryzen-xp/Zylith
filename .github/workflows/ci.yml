@@ -50,19 +50,8 @@ jobs:
       - name: Build Cairo contracts
         run: scarb build
 
-      - name: Run CLMM tests
-        run: snforge test test_clmm
-        continue-on-error: true
-
-      - name: Run Privacy layer tests
-        run: snforge test test_privacy
-
-      - name: Run Integration tests
-        run: snforge test test_integration
-        continue-on-error: true
-
       - name: Run all tests (summary)
-        run: snforge test --detailed
+        run: scarb test --detailed
 
       - name: Upload test results
         if: always()
