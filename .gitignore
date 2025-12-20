@@ -5,6 +5,7 @@ coverage/
 profile/
 
 scarb.lock
+Scarb.lock
 .scarb/
 
 **/target/
@@ -21,6 +22,10 @@ __pycache__/
 .ruff_cache/
 .coverage
 coverage.xml
+venv/
+.venv/
+env/
+.env/
 
 node_modules/
 npm-debug.log*
@@ -49,6 +54,14 @@ CLAUDE.md
 dist/
 build/
 out/
+
+# Circuit files (generated artifacts)
+*.ptau
+*.zkey
+*.wasm
+*.r1cs
+*.sym
+*.vk.json
 
 .terraform/
 *.tfstate
