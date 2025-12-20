@@ -50,5 +50,24 @@ jobs:
       - name: Build Cairo contracts
         run: scarb build
 
-      - name: Run all tests
+      - name: Run CLMM tests
+        run: snforge test test_clmm --detailed
+        continue-on-error: true
+
+      - name: Run Privacy layer tests
+        run: snforge test test_privacy --detailed
+
+      - name: Run Integration tests
+        run: snforge test test_integration --detailed
+        continue-on-error: true
+
+      - name: Run all tests (full suite)
         run: scarb test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./zylith/target/
+          retention-days: 7
