@@ -472,10 +472,15 @@ Garaga enables seamless verification of Noir UltraHonk proofs on Starknet! See *
 
 | Tool | Required Version | Current Status |
 |------|------------------|----------------|
-| Python | 3.10+ | ⚠️ Need 3.10+ (have 3.9.6) |
+| Python 3.10 | 3.10.x | ✅ 3.10.19 (via pyenv) |
 | Nargo | 1.0.0-beta.16+ | ✅ 1.0.0-beta.17 |
 | Barretenberg | 3.0.0-nightly.20251104 | ✅ Exact match! |
-| Garaga CLI | 1.0.1 | ⏳ Pending Python upgrade |
+| Garaga CLI | 1.0.1 | ✅ Installed in .venv-garaga/ |
+
+**Note**: Garaga requires Python 3.10.x specifically. A dedicated virtual environment is available at `.venv-garaga/`. Activate it with:
+```bash
+source activate-garaga.sh  # From project root
+```
 
 ### Integration Pattern
 
@@ -518,18 +523,24 @@ fn private_swap(
 
 See **[VERIFICATION.md](./VERIFICATION.md)** for the complete checklist and detailed instructions.
 
-## Next Steps (Phase 5+)
+## Next Steps (Phase 5+ Implementation)
 
-- [ ] Set up Python 3.10+ environment
-- [ ] Install Garaga CLI and generate verifiers
-- [ ] Deploy verifiers to Starknet testnet
+**Environment Setup** ✅ COMPLETE:
+- [x] Set up Python 3.10+ environment (Python 3.10.19 via pyenv)
+- [x] Install Garaga CLI (v1.0.1 in .venv-garaga/)
+- [x] Phase 5 evaluation complete (see PHASE5_EVALUATION.md)
+
+**Ready to Execute**:
+- [ ] Generate verifiers for all 5 circuits (membership, swap, withdraw, lp_mint, lp_burn)
+- [ ] Deploy verifiers to Starknet Sepolia testnet
 - [ ] Integrate verifiers with Zylith Cairo contracts
 - [ ] End-to-end testing on Starknet
-- [ ] Implement full CLMM math in all circuits (Post-MVP)
-- [ ] Performance benchmarking and gas optimization (Phase 5)
-- [ ] Comparison with Circom/Groth16 approach (Phase 5)
+- [ ] Performance benchmarking and gas measurement
+
+**Post-Production**:
+- [ ] Implement full CLMM math in all circuits
 - [ ] Proof aggregation implementation
-- [ ] Production deployment
+- [ ] Mainnet deployment
 
 ## Troubleshooting
 

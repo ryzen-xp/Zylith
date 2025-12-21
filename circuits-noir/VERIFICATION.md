@@ -30,22 +30,32 @@ This guide documents the complete workflow for verifying Noir UltraHonk proofs o
 
 | Tool | Version | Status | Notes |
 |------|---------|--------|-------|
-| **Python** | 3.10+ | ⚠️ Need upgrade | Current: 3.9.6 |
+| **Python 3.10** | 3.10.19 | ✅ Installed | Via pyenv |
 | **Nargo** | 1.0.0-beta.16+ | ✅ Installed | Current: 1.0.0-beta.17 |
 | **Barretenberg** | 3.0.0-nightly.20251104 | ✅ Installed | Exact match! |
-| **Garaga CLI** | 1.0.1 | ⏳ Pending | Requires Python 3.10+ |
+| **Garaga CLI** | 1.0.1 | ✅ Installed | In Python 3.10 venv |
 
-### Installation Commands
+### Environment Setup
 
+**Garaga Virtual Environment**:
+A dedicated Python 3.10 virtual environment has been created at `.venv-garaga/` because Garaga requires Python 3.10.x specifically.
+
+**Activate the Garaga environment**:
 ```bash
-# Install Garaga CLI (requires Python 3.10+)
-pip install garaga==1.0.1
+# From the project root
+source activate-garaga.sh
 
-# Verify installation
-garaga --version
+# Or manually
+source .venv-garaga/bin/activate
 ```
 
-**Important**: Use a Python virtual environment to avoid system conflicts.
+**Verify installation**:
+```bash
+garaga --version  # Should show: garaga version: 1.0.1
+python --version  # Should show: Python 3.10.19
+```
+
+**Important**: Always activate the Garaga environment before running Garaga commands.
 
 ## Verification Workflow
 
@@ -291,11 +301,11 @@ fn private_swap(
 
 ## Deployment Checklist
 
-- [ ] Python 3.10+ environment set up
-- [ ] Garaga CLI installed and verified
-- [ ] All circuits compiled successfully
-- [ ] Verification keys generated for all circuits
-- [ ] Cairo verifier contracts generated
+- [x] Python 3.10+ environment set up ✅ (Python 3.10.19 via pyenv)
+- [x] Garaga CLI installed and verified ✅ (v1.0.1 in .venv-garaga/)
+- [ ] All circuits compiled successfully (ready to do)
+- [ ] Verification keys generated for all circuits (ready to do)
+- [ ] Cairo verifier contracts generated (ready to do)
 - [ ] Verifier contracts audited
 - [ ] Local testing complete
 - [ ] Devnet testing complete
@@ -308,10 +318,9 @@ fn private_swap(
 
 ### Current Limitations
 
-1. **Python Version**: Requires 3.10+ (currently have 3.9.6)
-2. **CLMM Math**: Circuits use simplified checks (full Q96 math TODO)
-3. **No Aggregation**: Each proof verified individually
-4. **Manual Deployment**: No automated CI/CD pipeline yet
+1. **CLMM Math**: Circuits use simplified checks (full Q96 math TODO)
+2. **No Aggregation**: Each proof verified individually
+3. **Manual Deployment**: No automated CI/CD pipeline yet
 
 ### Future Enhancements
 
@@ -338,4 +347,4 @@ fn private_swap(
 
 ---
 
-**Status**: Research complete, ready for implementation pending Python 3.10+ environment.
+**Status**: ✅ Environment ready! Python 3.10.19 and Garaga 1.0.1 installed. Ready to generate verifiers.
