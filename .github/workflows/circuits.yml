@@ -4,12 +4,12 @@ on:
   push:
     branches: [main, develop, feat/**]
     paths:
-      - 'zylith/circom/**'
+      - 'circuits/**'
       - '.github/workflows/circuits.yml'
   pull_request:
     branches: [main, develop]
     paths:
-      - 'zylith/circom/**'
+      - 'circuits/**'
       - '.github/workflows/circuits.yml'
 
 jobs:
@@ -19,12 +19,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Verify repository structure
-        run: |
-          ls -la
-          ls -la zylith/
-          ls -la zylith/circom/
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
@@ -42,28 +36,28 @@ jobs:
 
       - name: Install npm dependencies
         run: |
-          cd zylith/circom
+          cd circuits
           npm ci
 
       - name: Cache circuit builds
         uses: actions/cache@v4
         with:
           path: |
-            zylith/circom/build
-            zylith/circom/pot
-            zylith/circom/zkeys
-          key: ${{ runner.os }}-circuits-${{ hashFiles('zylith/circom/circuits/*.circom') }}
+            circuits/build
+            circuits/pot
+            circuits/zkeys
+          key: ${{ runner.os }}-circuits-${{ hashFiles('circuits/*.circom', 'circuits/lib/*.circom') }}
           restore-keys: |
             ${{ runner.os }}-circuits-
 
       - name: Compile Circom circuits
         run: |
-          cd zylith/circom
+          cd circuits
           npm run compile
 
       - name: Upload circuit artifacts
         uses: actions/upload-artifact@v4
         with:
           name: circuit-builds
-          path: zylith/circom/build/
+          path: circuits/build/
           retention-days: 7
