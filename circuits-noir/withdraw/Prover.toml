@@ -1,0 +1,23 @@
+# Prover.toml - Input values for the withdraw circuit
+# Test values for private withdrawal proof
+
+# Public inputs
+merkle_root = "0"
+commitment = "0"
+nullifier = "0"
+recipient = "0x1234567890abcdef1234567890abcdef12345678"  # Example address
+amount = "1000"
+
+# Private inputs
+secret = "12345"
+
+# Merkle proof
+path_elements = [
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
+]
+
+path_indices = [
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
+]

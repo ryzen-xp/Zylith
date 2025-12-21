@@ -1,0 +1,32 @@
+# Prover.toml - Input values for the swap circuit
+# Test values for private swap proof
+
+# Public inputs
+merkle_root = "0"
+old_commitment = "0"
+new_commitment = "0"
+sqrt_price_before = "0"
+sqrt_price_after = "0"
+liquidity = "0"
+zero_for_one = "true"
+
+# Private inputs - Input commitment (token being swapped in)
+secret_in = "12345"
+nullifier_in = "67890"
+amount_in = "1000"
+
+# Private inputs - Output commitment (token received from swap)
+secret_out = "54321"
+nullifier_out = "98760"
+amount_out = "900"
+
+# Merkle proof for input commitment
+path_elements = [
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
+]
+
+path_indices = [
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
+]

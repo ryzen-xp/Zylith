@@ -1,0 +1,33 @@
+# Prover.toml - Input values for the LP burn circuit
+# Test values for private liquidity removal proof
+
+# Public inputs
+merkle_root = "0"
+old_commitment = "0"
+new_commitment = "0"
+tick_lower = "-60"
+tick_upper = "60"
+liquidity_delta = "50000"  # Amount of liquidity being removed
+sqrt_price_current = "1000000"
+
+# Private inputs - Input commitment (LP position being burned)
+secret_in = "54321"
+nullifier_in = "98760"
+position_liquidity = "100000"  # Total liquidity in position
+
+# Private inputs - Output commitment (tokens withdrawn)
+secret_out = "12345"
+nullifier_out = "67890"
+amount0 = "500"  # Tokens received from burning
+amount1 = "500"
+
+# Merkle proof for input commitment
+path_elements = [
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
+]
+
+path_indices = [
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
+]
