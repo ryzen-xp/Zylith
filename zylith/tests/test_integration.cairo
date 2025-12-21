@@ -6,7 +6,7 @@ use core::integer::u128;
 use core::traits::TryInto;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
-    stop_cheat_caller_address
+    stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 use zylith::clmm::math;
@@ -103,7 +103,7 @@ fn test_initialize_pool_with_erc20() {
             setup.token1.contract_address,
             fee,
             tick_spacing,
-            sqrt_price_x128
+            sqrt_price_x128,
         );
     stop_cheat_caller_address(setup.zylith.contract_address);
 
@@ -129,7 +129,7 @@ fn test_mint_liquidity_with_erc20() {
             setup.token1.contract_address,
             fee,
             tick_spacing,
-            sqrt_price_x128
+            sqrt_price_x128,
         );
 
     // Check initial balances
@@ -172,7 +172,7 @@ fn test_swap_with_erc20() {
             setup.token1.contract_address,
             fee,
             tick_spacing,
-            sqrt_price_x128
+            sqrt_price_x128,
         );
 
     // Add liquidity first
@@ -221,7 +221,7 @@ fn test_burn_liquidity_with_erc20() {
             setup.token1.contract_address,
             fee,
             tick_spacing,
-            sqrt_price_x128
+            sqrt_price_x128,
         );
 
     // Mint liquidity
@@ -268,7 +268,7 @@ fn test_collect_fees_with_erc20() {
             setup.token1.contract_address,
             fee,
             tick_spacing,
-            sqrt_price_x128
+            sqrt_price_x128,
         );
 
     // Add liquidity
@@ -306,7 +306,7 @@ fn test_full_lifecycle_with_erc20() {
             setup.token1.contract_address,
             fee,
             tick_spacing,
-            sqrt_price_x128
+            sqrt_price_x128,
         );
 
     // Mint liquidity
@@ -347,7 +347,11 @@ fn test_root_history_after_initialization() {
     let setup = setup_with_erc20();
 
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, 3000, 60, math::Q128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address, setup.token1.contract_address, 3000, 60, math::Q128,
+        );
     stop_cheat_caller_address(setup.zylith.contract_address);
 
     // Initial root (0) should be known
@@ -365,7 +369,11 @@ fn test_known_roots_count() {
     let setup = setup_with_erc20();
 
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, 3000, 60, math::Q128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address, setup.token1.contract_address, 3000, 60, math::Q128,
+        );
     stop_cheat_caller_address(setup.zylith.contract_address);
 
     // Should start with 1 known root (the empty tree root)
@@ -380,7 +388,11 @@ fn test_nullifier_not_spent_initially() {
     let setup = setup_with_erc20();
 
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, 3000, 60, math::Q128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address, setup.token1.contract_address, 3000, 60, math::Q128,
+        );
     stop_cheat_caller_address(setup.zylith.contract_address);
 
     // Random nullifiers should not be spent

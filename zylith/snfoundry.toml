@@ -13,7 +13,7 @@ show-explorer-links = false
 [sncast.sepolia]
 url = "https://api.cartridge.gg/x/starknet/sepolia"
 accounts-file = "./accounts/sepolia.json"
-account = "sepolia_account"
+account = "account420"
 wait-params = { timeout = 600, retry-interval = 10 }
 block-explorer = "StarkScan"
 show-explorer-links = true

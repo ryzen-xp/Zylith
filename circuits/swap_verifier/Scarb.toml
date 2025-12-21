@@ -13,7 +13,7 @@ sierra-replace-ids = false
 inlining-strategy = 2
 
 [dev-dependencies]
-snforge_std = "0.53.0"
+snforge_std = "0.54.0"
 assert_macros = "2.14.0"
 
 [[target.starknet-contract]]

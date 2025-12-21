@@ -229,7 +229,7 @@ fn test_nullifier_uniqueness() {
     // Different nullifiers should be independent
     assert!(nullifier1 != nullifier2);
 }
-
 // ==================== Integration Tests ====================
 // Note: Full integration tests with private_deposit require mocking ERC20 transfers
 // These would be in a separate integration test file with proper ERC20 mocks
+

@@ -5,7 +5,7 @@ use core::array::ArrayTrait;
 use core::traits::TryInto;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
-    stop_cheat_caller_address
+    stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 use zylith::clmm::math;
@@ -93,7 +93,15 @@ fn test_initialize_pool() {
     let sqrt_price_x128: u256 = math::Q128; // Q128 format, price = 1
 
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
     stop_cheat_caller_address(setup.zylith.contract_address);
 
     // Verify pool is initialized - check root is known
@@ -110,11 +118,18 @@ fn test_initialize_pool_twice_should_fail() {
     let sqrt_price_x128: u256 = math::Q128;
 
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
     stop_cheat_caller_address(setup.zylith.contract_address);
-    
     // Second initialization - the contract allows this but it's a configuration detail
-    // Pool is initialized, this test just verifies the first init works
+// Pool is initialized, this test just verifies the first init works
 }
 
 // ==================== Mint Tests ====================
@@ -127,9 +142,17 @@ fn test_mint_liquidity() {
     let fee: u128 = 3000;
     let tick_spacing: i32 = 60;
     let sqrt_price_x128: u256 = math::Q128;
-    
+
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     // Mint liquidity
     let tick_lower: i32 = -60;
@@ -150,9 +173,17 @@ fn test_mint_liquidity_at_current_price() {
     let fee: u128 = 3000;
     let tick_spacing: i32 = 60;
     let sqrt_price_x128: u256 = math::Q128; // Price = 1.0
-    
+
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     // Mint at current price (tick 0)
     let tick_lower: i32 = -60;
@@ -174,9 +205,17 @@ fn test_mint_liquidity_above_price() {
     let fee: u128 = 3000;
     let tick_spacing: i32 = 60;
     let sqrt_price_x128: u256 = math::Q128;
-    
+
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     // Mint above current price (only token1)
     let tick_lower: i32 = 120;
@@ -197,9 +236,17 @@ fn test_mint_liquidity_below_price() {
     let fee: u128 = 3000;
     let tick_spacing: i32 = 60;
     let sqrt_price_x128: u256 = math::Q128;
-    
+
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     // Mint below current price (only token0)
     let tick_lower: i32 = -120;
@@ -224,9 +271,17 @@ fn test_swap_basic() {
     let fee: u128 = 3000;
     let tick_spacing: i32 = 60;
     let sqrt_price_x128: u256 = math::Q128;
-    
+
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     // Add liquidity first
     let tick_lower: i32 = -600;
@@ -239,7 +294,9 @@ fn test_swap_basic() {
     let amount_specified: u128 = 100;
     let sqrt_price_limit_x128: u256 = math::MIN_SQRT_RATIO;
 
-    let (amount0, amount1) = setup.zylith.swap(zero_for_one, amount_specified, sqrt_price_limit_x128);
+    let (amount0, amount1) = setup
+        .zylith
+        .swap(zero_for_one, amount_specified, sqrt_price_limit_x128);
     stop_cheat_caller_address(setup.zylith.contract_address);
 
     // Verify swap executed
@@ -255,7 +312,15 @@ fn test_swap_reverse_direction() {
     let sqrt_price_x128: u256 = math::Q128;
 
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     setup.zylith.mint(-600, 600, 10000);
 
@@ -264,7 +329,9 @@ fn test_swap_reverse_direction() {
     let amount_specified: u128 = 100;
     let sqrt_price_limit_x128: u256 = math::MAX_SQRT_RATIO;
 
-    let (amount0, amount1) = setup.zylith.swap(zero_for_one, amount_specified, sqrt_price_limit_x128);
+    let (amount0, amount1) = setup
+        .zylith
+        .swap(zero_for_one, amount_specified, sqrt_price_limit_x128);
     stop_cheat_caller_address(setup.zylith.contract_address);
 
     // Verify swap executed
@@ -280,7 +347,15 @@ fn test_swap_with_slippage_protection() {
     let sqrt_price_x128: u256 = math::Q128;
 
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     setup.zylith.mint(-600, 600, 10000);
 
@@ -290,7 +365,9 @@ fn test_swap_with_slippage_protection() {
     let current_price = math::Q128;
     let sqrt_price_limit_x128: u256 = current_price - (current_price / 10); // 10% lower
 
-    let (amount0, amount1) = setup.zylith.swap(zero_for_one, amount_specified, sqrt_price_limit_x128);
+    let (amount0, amount1) = setup
+        .zylith
+        .swap(zero_for_one, amount_specified, sqrt_price_limit_x128);
     stop_cheat_caller_address(setup.zylith.contract_address);
 
     // Swap should execute
@@ -306,9 +383,17 @@ fn test_burn_liquidity() {
     let fee: u128 = 3000;
     let tick_spacing: i32 = 60;
     let sqrt_price_x128: u256 = math::Q128;
-    
+
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     let tick_lower: i32 = -60;
     let tick_upper: i32 = 60;
@@ -332,9 +417,17 @@ fn test_burn_all_liquidity() {
     let fee: u128 = 3000;
     let tick_spacing: i32 = 60;
     let sqrt_price_x128: u256 = math::Q128;
-    
+
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     let tick_lower: i32 = -60;
     let tick_upper: i32 = 60;
@@ -358,9 +451,17 @@ fn test_collect_fees() {
     let fee: u128 = 3000;
     let tick_spacing: i32 = 60;
     let sqrt_price_x128: u256 = math::Q128;
-    
+
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     let tick_lower: i32 = -600;
     let tick_upper: i32 = 600;
@@ -385,9 +486,17 @@ fn test_collect_fees_multiple_swaps() {
     let fee: u128 = 3000;
     let tick_spacing: i32 = 60;
     let sqrt_price_x128: u256 = math::Q128;
-    
+
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     let tick_lower: i32 = -600;
     let tick_upper: i32 = 600;
@@ -413,9 +522,17 @@ fn test_collect_fees_no_swaps() {
     let fee: u128 = 3000;
     let tick_spacing: i32 = 60;
     let sqrt_price_x128: u256 = math::Q128;
-    
+
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     let tick_lower: i32 = -600;
     let tick_upper: i32 = 600;
@@ -439,9 +556,17 @@ fn test_multiple_positions() {
     let fee: u128 = 3000;
     let tick_spacing: i32 = 60;
     let sqrt_price_x128: u256 = math::Q128;
-    
+
     start_cheat_caller_address(setup.zylith.contract_address, caller());
-    setup.zylith.initialize(setup.token0.contract_address, setup.token1.contract_address, fee, tick_spacing, sqrt_price_x128);
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            fee,
+            tick_spacing,
+            sqrt_price_x128,
+        );
 
     // Create multiple positions
     setup.zylith.mint(-600, -240, 10000);

@@ -10,7 +10,7 @@ pub mod Zylith {
     use zylith::clmm::position::PositionStorage;
     use zylith::clmm::tick::{TickBitmap, TickInfo};
     use zylith::clmm::{liquidity, math, tick};
-    use zylith::interfaces::izylith::IZylith;
+    use zylith::interfaces::ierc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use zylith::privacy::commitment::NullifierStorage;
     use zylith::privacy::deposit::DepositStorage;
     use zylith::privacy::merkle_tree::MerkleTreeStorage;
@@ -32,7 +32,6 @@ pub mod Zylith {
         IWithdrawGroth16VerifierBN254Dispatcher as IWithdrawVerifier,
         IWithdrawGroth16VerifierBN254DispatcherTrait as IWithdrawVerifierTrait,
     };
-    use zylith::interfaces::ierc20::{IERC20Dispatcher, IERC20DispatcherTrait};
 
     #[storage]
     pub struct Storage {
@@ -154,7 +153,7 @@ pub mod Zylith {
 
         /// Private deposit - transfer tokens and add commitment to Merkle tree
         fn private_deposit(
-            ref self: ContractState, token: ContractAddress, amount: u256, commitment: felt252
+            ref self: ContractState, token: ContractAddress, amount: u256, commitment: felt252,
         ) {
             let caller = get_caller_address();
             let this_contract = starknet::get_contract_address();
@@ -174,8 +173,9 @@ pub mod Zylith {
         }
 
         /// Private swap with ZK proof verification
-        /// SECURITY: Validates nullifier (prevents double-spend), historical root, and swap transition
-        /// The proof must include expected swap outputs which are verified against on-chain execution
+        /// SECURITY: Validates nullifier (prevents double-spend), historical root, and swap
+        /// transition The proof must include expected swap outputs which are verified against
+        /// on-chain execution
         fn private_swap(
             ref self: ContractState,
             proof: Array<felt252>,
@@ -382,7 +382,8 @@ pub mod Zylith {
             // Step 4 - Mark nullifier as spent (CEI pattern)
             self.nullifiers.spent_nullifiers.entry(verified_nullifier).write(true);
 
-            // Step 5 - Execute the mint logic (similar to public mint but using commitment-based ownership)
+            // Step 5 - Execute the mint logic (similar to public mint but using commitment-based
+            // ownership)
             // Note: The actual token amounts are calculated internally, not from the proof
             // This ensures the CLMM math is correct and not manipulated
             assert!(tick_lower < tick_upper);
@@ -423,10 +424,10 @@ pub mod Zylith {
 
             // Calculate fee growth inside range
             let fee_growth_inside0 = InternalFunctionsImpl::_get_fee_growth_inside(
-                ref self, tick_lower, tick_upper, true
+                ref self, tick_lower, tick_upper, true,
             );
             let fee_growth_inside1 = InternalFunctionsImpl::_get_fee_growth_inside(
-                ref self, tick_lower, tick_upper, false
+                ref self, tick_lower, tick_upper, false,
             );
 
             // Update position

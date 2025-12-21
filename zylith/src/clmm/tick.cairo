@@ -39,7 +39,7 @@ pub fn position(tick: i32) -> (i32, i32) {
         let mut bp = tick % 256;
         if bp < 0 {
             bp = bp + 256;
-        };
+        }
         (wp, bp)
     };
     (word_pos, bit_pos)
@@ -59,7 +59,7 @@ pub fn power_of_2_u256(bit_pos: i32) -> u256 {
             base = base * base;
         }
         bit_pos_u32 = bit_pos_u32 / 2;
-    };
+    }
     res
 }
 

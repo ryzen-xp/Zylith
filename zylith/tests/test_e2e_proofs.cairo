@@ -7,7 +7,10 @@
 
 use core::array::ArrayTrait;
 use core::traits::TryInto;
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
+    stop_cheat_caller_address,
+};
 use starknet::ContractAddress;
 use zylith::interfaces::izylith::{IZylithDispatcher, IZylithDispatcherTrait};
 use zylith::mocks::erc20::{IMockERC20Dispatcher, IMockERC20DispatcherTrait};
@@ -62,17 +65,20 @@ fn deploy_zylith_with_mock_verifiers() -> IZylithDispatcher {
 #[test]
 fn test_commitment_matches_circuit_format() {
     // Generate commitment in Cairo
-    let cairo_commitment = commitment::generate_commitment(TEST_SECRET, TEST_NULLIFIER, TEST_AMOUNT);
-    
+    let cairo_commitment = commitment::generate_commitment(
+        TEST_SECRET, TEST_NULLIFIER, TEST_AMOUNT,
+    );
+
     // The commitment should be non-zero and deterministic
     assert!(cairo_commitment != 0);
-    
+
     // Same inputs should produce same output
-    let cairo_commitment2 = commitment::generate_commitment(TEST_SECRET, TEST_NULLIFIER, TEST_AMOUNT);
+    let cairo_commitment2 = commitment::generate_commitment(
+        TEST_SECRET, TEST_NULLIFIER, TEST_AMOUNT,
+    );
     assert!(cairo_commitment == cairo_commitment2);
-    
     // This commitment value should match what snarkjs produces
-    // When running generate_test_fixtures.js, verify the commitment matches
+// When running generate_test_fixtures.js, verify the commitment matches
 }
 
 /// Test that verifier interface is correctly called
@@ -81,35 +87,50 @@ fn test_verifier_interface_called() {
     let zylith = deploy_zylith_with_mock_verifiers();
     let token0 = deploy_mock_erc20('Token0', 'TK0');
     let token1 = deploy_mock_erc20('Token1', 'TK1');
-    
+
     // Initialize pool
     start_cheat_caller_address(zylith.contract_address, caller());
-    zylith.initialize(token0.contract_address, token1.contract_address, 3000, 60, 340282366920938463463374607431768211456);
+    zylith
+        .initialize(
+            token0.contract_address,
+            token1.contract_address,
+            3000,
+            60,
+            340282366920938463463374607431768211456,
+        );
     stop_cheat_caller_address(zylith.contract_address);
-    
+
     // Mint tokens to caller
     token0.mint(caller(), 1000000000000000000000000);
     token1.mint(caller(), 1000000000000000000000000);
-    
+
     // Approve Zylith
     start_cheat_caller_address(token0.contract_address, caller());
-    token0.approve(zylith.contract_address, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+    token0
+        .approve(
+            zylith.contract_address,
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+        );
     stop_cheat_caller_address(token0.contract_address);
-    
+
     start_cheat_caller_address(token1.contract_address, caller());
-    token1.approve(zylith.contract_address, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+    token1
+        .approve(
+            zylith.contract_address,
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+        );
     stop_cheat_caller_address(token1.contract_address);
-    
+
     // Test private_deposit (token, amount, commitment)
     start_cheat_caller_address(zylith.contract_address, caller());
-    
+
     let test_commitment: felt252 = 12345; // Dummy commitment
-    
+
     // private_deposit takes: token, amount: u256, commitment
     zylith.private_deposit(token0.contract_address, 1000, test_commitment);
-    
+
     stop_cheat_caller_address(zylith.contract_address);
-    
+
     // Verify the commitment was inserted
     let root = zylith.get_merkle_root();
     assert!(root != 0);
@@ -123,49 +144,60 @@ fn test_private_deposit_flow() {
     let zylith = deploy_zylith_with_mock_verifiers();
     let token0 = deploy_mock_erc20('Token0', 'TK0');
     let token1 = deploy_mock_erc20('Token1', 'TK1');
-    
+
     // Initialize pool
     start_cheat_caller_address(zylith.contract_address, caller());
-    zylith.initialize(token0.contract_address, token1.contract_address, 3000, 60, 340282366920938463463374607431768211456);
+    zylith
+        .initialize(
+            token0.contract_address,
+            token1.contract_address,
+            3000,
+            60,
+            340282366920938463463374607431768211456,
+        );
     stop_cheat_caller_address(zylith.contract_address);
-    
+
     // Mint tokens
     token0.mint(caller(), 1000000000000000000000000);
-    
+
     // Approve
     start_cheat_caller_address(token0.contract_address, caller());
-    token0.approve(zylith.contract_address, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+    token0
+        .approve(
+            zylith.contract_address,
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+        );
     stop_cheat_caller_address(token0.contract_address);
-    
+
     // Deposit
     start_cheat_caller_address(zylith.contract_address, caller());
-    
+
     let commitment1: felt252 = 111111;
     let deposit_amount: u128 = 100000;
-    
+
     let balance_before = token0.balance_of(caller());
     zylith.private_deposit(token0.contract_address, deposit_amount.into(), commitment1);
     let balance_after = token0.balance_of(caller());
-    
+
     // Verify tokens were transferred
     assert!(balance_before - balance_after == deposit_amount.into());
-    
+
     // Verify root changed
     let root_after_deposit = zylith.get_merkle_root();
     assert!(root_after_deposit != 0);
     assert!(zylith.is_root_known(root_after_deposit));
-    
+
     // Verify multiple deposits work
     let commitment2: felt252 = 222222;
     zylith.private_deposit(token0.contract_address, deposit_amount.into(), commitment2);
-    
+
     let root_after_second = zylith.get_merkle_root();
     assert!(root_after_second != root_after_deposit);
-    
+
     // Both roots should be known (historical tracking)
     assert!(zylith.is_root_known(root_after_deposit));
     assert!(zylith.is_root_known(root_after_second));
-    
+
     stop_cheat_caller_address(zylith.contract_address);
 }
 
@@ -178,37 +210,48 @@ fn test_double_spend_prevention() {
     let zylith = deploy_zylith_with_mock_verifiers();
     let token0 = deploy_mock_erc20('Token0', 'TK0');
     let token1 = deploy_mock_erc20('Token1', 'TK1');
-    
+
     // Initialize pool
     start_cheat_caller_address(zylith.contract_address, caller());
-    zylith.initialize(token0.contract_address, token1.contract_address, 3000, 60, 340282366920938463463374607431768211456);
+    zylith
+        .initialize(
+            token0.contract_address,
+            token1.contract_address,
+            3000,
+            60,
+            340282366920938463463374607431768211456,
+        );
     stop_cheat_caller_address(zylith.contract_address);
-    
+
     // Mint and approve
     token0.mint(caller(), 1000000000000000000000000);
     start_cheat_caller_address(token0.contract_address, caller());
-    token0.approve(zylith.contract_address, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+    token0
+        .approve(
+            zylith.contract_address,
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+        );
     stop_cheat_caller_address(token0.contract_address);
-    
+
     // Deposit
     start_cheat_caller_address(zylith.contract_address, caller());
-    
+
     let commitment1: felt252 = 333333;
     zylith.private_deposit(token0.contract_address, 100000, commitment1);
-    
+
     let root = zylith.get_merkle_root();
-    
+
     // First withdraw - should succeed
     let nullifier: felt252 = 444444;
     let proof: Array<felt252> = array![1, 2, 3, 4, 5, 6, 7, 8];
     let public_inputs: Array<felt252> = array![nullifier, root, caller().into(), 100000];
     zylith.private_withdraw(proof, public_inputs, token0.contract_address, caller(), 100000);
-    
+
     // Second withdraw with same nullifier - should fail
     let proof2: Array<felt252> = array![1, 2, 3, 4, 5, 6, 7, 8];
     let public_inputs2: Array<felt252> = array![nullifier, root, caller().into(), 100000];
     zylith.private_withdraw(proof2, public_inputs2, token0.contract_address, caller(), 100000);
-    
+
     stop_cheat_caller_address(zylith.contract_address);
 }
 
@@ -218,45 +261,55 @@ fn test_historical_root_accepted() {
     let zylith = deploy_zylith_with_mock_verifiers();
     let token0 = deploy_mock_erc20('Token0', 'TK0');
     let token1 = deploy_mock_erc20('Token1', 'TK1');
-    
+
     // Initialize pool
     start_cheat_caller_address(zylith.contract_address, caller());
-    zylith.initialize(token0.contract_address, token1.contract_address, 3000, 60, 340282366920938463463374607431768211456);
+    zylith
+        .initialize(
+            token0.contract_address,
+            token1.contract_address,
+            3000,
+            60,
+            340282366920938463463374607431768211456,
+        );
     stop_cheat_caller_address(zylith.contract_address);
-    
+
     // Initial root should be known
     let initial_root: felt252 = 0;
     assert!(zylith.is_root_known(initial_root));
-    
+
     // Mint and approve
     token0.mint(caller(), 1000000000000000000000000);
     start_cheat_caller_address(token0.contract_address, caller());
-    token0.approve(zylith.contract_address, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+    token0
+        .approve(
+            zylith.contract_address,
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+        );
     stop_cheat_caller_address(token0.contract_address);
-    
+
     // Make multiple deposits to create multiple roots
     start_cheat_caller_address(zylith.contract_address, caller());
-    
+
     let commitment1: felt252 = 555555;
     zylith.private_deposit(token0.contract_address, 10000, commitment1);
     let root1 = zylith.get_merkle_root();
-    
+
     let commitment2: felt252 = 666666;
     zylith.private_deposit(token0.contract_address, 20000, commitment2);
     let root2 = zylith.get_merkle_root();
-    
+
     // Both roots should be known
     assert!(zylith.is_root_known(root1));
     assert!(zylith.is_root_known(root2));
     assert!(root1 != root2);
-    
+
     // Verify roots count increased
     let count = zylith.get_known_roots_count();
     assert!(count >= 3); // initial + 2 deposits
-    
+
     stop_cheat_caller_address(zylith.contract_address);
 }
-
 // ==================== NOTES FOR FULL E2E TESTING ====================
 //
 // To run full E2E tests with real Groth16 proofs:
@@ -273,3 +326,4 @@ fn test_historical_root_accepted() {
 //
 // Note: Full proof generation with depth=25 takes significant time (~minutes)
 // Consider using depth=10 for rapid testing during development
+

@@ -13,7 +13,7 @@ pub trait IMockERC20<TContractState> {
     fn allowance(self: @TContractState, owner: ContractAddress, spender: ContractAddress) -> u256;
     fn transfer(ref self: TContractState, recipient: ContractAddress, amount: u256) -> bool;
     fn transfer_from(
-        ref self: TContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256
+        ref self: TContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256,
     ) -> bool;
     fn approve(ref self: TContractState, spender: ContractAddress, amount: u256) -> bool;
     // Test-only functions
@@ -26,7 +26,7 @@ pub mod MockERC20 {
     use core::num::traits::Zero;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
-        StoragePointerWriteAccess
+        StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address};
 
@@ -96,7 +96,7 @@ pub mod MockERC20 {
         }
 
         fn allowance(
-            self: @ContractState, owner: ContractAddress, spender: ContractAddress
+            self: @ContractState, owner: ContractAddress, spender: ContractAddress,
         ) -> u256 {
             self.allowances.read((owner, spender))
         }
@@ -111,7 +111,7 @@ pub mod MockERC20 {
             ref self: ContractState,
             sender: ContractAddress,
             recipient: ContractAddress,
-            amount: u256
+            amount: u256,
         ) -> bool {
             let caller = get_caller_address();
             let current_allowance = self.allowances.read((sender, caller));
@@ -160,7 +160,7 @@ pub mod MockERC20 {
     #[generate_trait]
     impl InternalImpl of InternalTrait {
         fn _transfer(
-            ref self: ContractState, from: ContractAddress, to: ContractAddress, amount: u256
+            ref self: ContractState, from: ContractAddress, to: ContractAddress, amount: u256,
         ) {
             let from_balance = self.balances.read(from);
             assert(from_balance >= amount, 'ERC20: insufficient balance');
