@@ -1,0 +1,23 @@
+# Prover.toml - Input values for the membership circuit
+# Test values matching the unit test
+
+# Public inputs - computed using Poseidon BN254
+root = "0x0a4e8209b16e914337bdb4f01b7182fcde7f1e28516247a3ae3182b58d71a322"
+commitment = "0x19fe51a1a8d0878644bffd5482afd3c69687bf6b46bb6f265d436c5aadea902f"
+
+# Private inputs
+secret = "12345"
+nullifier = "67890"
+amount = "1000"
+
+# Merkle proof path (20 elements for depth-20 tree)
+# All zeros for a simple test case
+path_elements = [
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
+]
+
+path_indices = [
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
+]
