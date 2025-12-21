@@ -1,0 +1,63 @@
+name: Circom Circuits
+
+on:
+  push:
+    branches: [main, develop, feat/**]
+    paths:
+      - 'circuits/**'
+      - '.github/workflows/circuits.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'circuits/**'
+      - '.github/workflows/circuits.yml'
+
+jobs:
+  compile-circuits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Circom compiler
+        run: |
+          wget -q https://github.com/iden3/circom/releases/download/v2.1.6/circom-linux-amd64
+          chmod +x circom-linux-amd64
+          sudo mv circom-linux-amd64 /usr/local/bin/circom
+
+      - name: Verify Circom installation
+        run: circom --version
+
+      - name: Install npm dependencies
+        run: |
+          cd circuits
+          npm ci
+
+      - name: Cache circuit builds
+        uses: actions/cache@v4
+        with:
+          path: |
+            circuits/build
+            circuits/pot
+            circuits/zkeys
+          key: ${{ runner.os }}-circuits-${{ hashFiles('circuits/*.circom', 'circuits/lib/*.circom') }}
+          restore-keys: |
+            ${{ runner.os }}-circuits-
+
+      - name: Compile Circom circuits
+        run: |
+          cd circuits
+          npm run compile
+
+      - name: Upload circuit artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: circuit-builds
+          path: circuits/build/
+          retention-days: 7

@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, feat/**]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  SCARB_VERSION: "2.12.0"
+  SNFORGE_VERSION: "0.50.0"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./zylith
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Scarb
+        uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: ${{ env.SCARB_VERSION }}
+          cache: false
+
+      - name: Install Starknet Foundry
+        uses: foundry-rs/setup-snfoundry@v3
+        with:
+          starknet-foundry-version: ${{ env.SNFORGE_VERSION }}
+
+      - name: Cache Scarb dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/scarb
+            ./zylith/target
+          key: ${{ runner.os }}-scarb-${{ hashFiles('**/Scarb.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-scarb-
+
+      - name: Check Scarb version
+        run: scarb --version
+
+      - name: Check Starknet Foundry version
+        run: snforge --version
+
+      - name: Build Cairo contracts
+        run: scarb build
+
+      - name: Run tests
+        run: scarb test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./zylith/target/
+          retention-days: 7
