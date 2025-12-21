@@ -1,13 +1,13 @@
 {
-    "alpha-sepolia": {
-        "sepolia_account": {
-            "address": "0x012973e1d50a03DA3BC44FA1Fb73b9ae303f525c65a4f4D9c65231A9D21836fa",
-            "private_key": "0x05fc906426ae9869646095f39e9faa049261f7a69e177ed5ec0ee9b93e27ce26",
-            "public_key": "0x01bc8d430b8577666cdf973388b45899df5fbc41f12bc926a0dfacc14fd8a2e8",
-            "type": "open_zeppelin",
-            "deployed": true,
-            "legacy": false,
-            "class_hash": "0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f"
-        }
+  "alpha-sepolia": {
+    "account420": {
+      "address": "0x066EE9d5F6791270d7cD1314ddB9fc8f7EdCb59E2847e2b13D57A06e7c988D63",
+      "private_key": "0x0363c39930af5bfd1890d94963a503fec02cc4965080517dc2888c1671a5e25a",
+      "public_key": "0x0710d9bba836d1421365a73714dcd87e48fbbb86f5bd3458728bda08e7c890a4",
+      "type": "ready",
+      "deployed": true,
+      "legacy": false,
+      "class_hash": "0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f"
     }
+  }
 }

@@ -4,7 +4,7 @@ use starknet::ContractAddress;
 #[starknet::interface]
 pub trait IZylith<TContractState> {
     fn private_deposit(
-        ref self: TContractState, token: ContractAddress, amount: u256, commitment: felt252
+        ref self: TContractState, token: ContractAddress, amount: u256, commitment: felt252,
     );
 
     fn private_swap(
