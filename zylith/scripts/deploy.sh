@@ -152,7 +152,7 @@ log "${BLUE}Step 4: Deploying Zylith main contract...${NC}"
 if [ "$PROFILE" = "devnet" ]; then
     OWNER_ADDR="0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
 elif [ "$PROFILE" = "sepolia" ]; then
-    OWNER_ADDR="0x012973e1d50a03DA3BC44FA1Fb73b9ae303f525c65a4f4D9c65231A9D21836fa"
+    OWNER_ADDR="0x066EE9d5F6791270d7cD1314ddB9fc8f7EdCb59E2847e2b13D57A06e7c988D63"
 else
     OWNER_ADDR="0x0"
 fi

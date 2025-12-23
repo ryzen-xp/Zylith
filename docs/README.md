@@ -27,6 +27,8 @@ This index provides a structured roadmap to all Zylith Protocol documentation.
 | **[Implementation Guide](../zylith/README.md)** | Implementation guide | Architecture breakdown, setup, usage examples |
 | **[Deployment Guide](../zylith/docs/DEPLOYMENT.md)** | Deployment procedures | Contract deployment, configuration |
 | **[Usage Guide](../zylith/docs/USAGE.md)** | Usage examples | Code samples, integration patterns |
+| **[Frontend Integration Guide](integration/frontend-integration-guide.md)** | Frontend integration | Complete guide for integrating Zylith into frontend apps |
+| **[Backend API Service](integration/backend-api-service.md)** | Backend integration | Building API services for proof generation |
 | **[AI Instructions](../CLAUDE.md)** | AI assistant instructions | Development guidelines for Claude Code |
 
 ### Specialized Documentation
@@ -49,7 +51,7 @@ This index provides a structured roadmap to all Zylith Protocol documentation.
 | **Developer** | [README](../README.md) → [System Architecture](architecture/system-architecture.md) → [Implementation Guide](../zylith/README.md) → [Technology Stack](reference/technology-stack.md) | 60 minutes |
 | **Security Researcher** | [Product Requirements](product/product-requirements.md) (Security Model) → [System Architecture](architecture/system-architecture.md) (Security) → Source code review | 90 minutes |
 | **Privacy Researcher** | [Product Requirements](product/product-requirements.md) (Privacy) → [Requirements](reference/requirements.md) (Privacy) → circuits/ and src/privacy/ review | 90 minutes |
-| **Integrator** | [API Reference](api/api-reference.md) → [Implementation Guide](../zylith/README.md) (Usage) → [Usage Guide](../zylith/docs/USAGE.md) | 45 minutes |
+| **Integrator** | [Frontend Integration Guide](integration/frontend-integration-guide.md) → [Backend API Service](integration/backend-api-service.md) → [API Reference](api/api-reference.md) | 60 minutes |
 | **Architect** | [System Architecture](architecture/system-architecture.md) → [Product Requirements](product/product-requirements.md) (Technical Architecture) → Source code review | 120 minutes |
 
 ### Documentation by Topic
@@ -59,8 +61,10 @@ This index provides a structured roadmap to all Zylith Protocol documentation.
 | **Architecture & Design** | [System Architecture](architecture/system-architecture.md), [Product Requirements](product/product-requirements.md) (Technical Architecture) | `zylith/src/` |
 | **CLMM Implementation** | [System Architecture](architecture/system-architecture.md) (CLMM Layer), [Implementation Guide](../zylith/README.md) | `zylith/src/clmm/` |
 | **Privacy Layer** | [System Architecture](architecture/system-architecture.md) (Privacy Layer), [Product Requirements](product/product-requirements.md) (Privacy Guarantees) | `zylith/src/privacy/` |
-| **ZK Circuits** | [Product Requirements](product/product-requirements.md) (ZK Circuits), [Noir Circuits](../circuits-noir/README.md) | `zylith/circuits/` |
-| **Integration Patterns** | [System Architecture](architecture/system-architecture.md) (Integration), [API Reference](api/api-reference.md) | `zylith/src/integration/` |
+| **ZK Circuits** | [Product Requirements](product/product-requirements.md) (ZK Circuits), [Noir Circuits](../circuits-noir/README.md) | `circuits/` |
+| **Integration Patterns** | [Frontend Integration Guide](integration/frontend-integration-guide.md), [Backend API Service](integration/backend-api-service.md) | `zylith/src/integration/` |
+| **Frontend Integration** | [Frontend Integration Guide](integration/frontend-integration-guide.md) | Examples and code samples |
+| **Backend Services** | [Backend API Service](integration/backend-api-service.md) | API service implementation |
 | **Testing & Quality** | [Implementation Guide](../zylith/README.md) (Testing), [Product Requirements](product/product-requirements.md) (Success Criteria) | `zylith/tests/` |
 | **Deployment** | [Deployment Guide](../zylith/docs/DEPLOYMENT.md), [Product Requirements](product/product-requirements.md) (Timeline) | `zylith/scripts/` |
 | **Tools & Setup** | [Technology Stack](reference/technology-stack.md) | Configuration files |
