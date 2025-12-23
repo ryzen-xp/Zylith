@@ -3,8 +3,20 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IZylith<TContractState> {
+    fn initialize(
+        ref self: TContractState,
+        token0: ContractAddress,
+        token1: ContractAddress,
+        fee: u128,
+        tick_spacing: i32,
+        sqrt_price_x128: u256,
+    );
+
     fn private_deposit(
-        ref self: TContractState, token: ContractAddress, amount: u256, commitment: felt252,
+        ref self: TContractState, 
+        token: ContractAddress, 
+        amount: u256, 
+        commitment: felt252,
     );
 
     fn private_swap(
@@ -46,18 +58,20 @@ pub trait IZylith<TContractState> {
         new_commitment: felt252,
     ) -> (u128, u128);
 
-    // CLMM functions
-    fn initialize(
+    fn private_collect(
         ref self: TContractState,
-        token0: ContractAddress,
-        token1: ContractAddress,
-        fee: u128,
-        tick_spacing: i32,
-        sqrt_price_x128: u256,
-    );
+        proof: Array<felt252>,
+        public_inputs: Array<felt252>,
+        tick_lower: i32,
+        tick_upper: i32,
+        new_commitment: felt252,
+    ) -> (u128, u128);
 
     fn mint(
-        ref self: TContractState, tick_lower: i32, tick_upper: i32, amount: u128,
+        ref self: TContractState, 
+        tick_lower: i32, 
+        tick_upper: i32, 
+        amount: u128,
     ) -> (u128, u128);
 
     fn swap(
@@ -68,29 +82,23 @@ pub trait IZylith<TContractState> {
     ) -> (i128, i128);
 
     fn burn(
-        ref self: TContractState, tick_lower: i32, tick_upper: i32, amount: u128,
+        ref self: TContractState, 
+        tick_lower: i32, 
+        tick_upper: i32, 
+        amount: u128,
     ) -> (u128, u128);
 
-    fn collect(ref self: TContractState, tick_lower: i32, tick_upper: i32) -> (u128, u128);
-
-    /// Private collect - collect fees from a private LP position
-    /// Creates a new commitment for the collected fees instead of transferring ERC20
-    fn private_collect(
-        ref self: TContractState,
-        proof: Array<felt252>,
-        public_inputs: Array<felt252>,
-        tick_lower: i32,
-        tick_upper: i32,
-        new_commitment: felt252,
+    fn collect(
+        ref self: TContractState, 
+        tick_lower: i32, 
+        tick_upper: i32
     ) -> (u128, u128);
 
-    // Privacy functions
     fn get_merkle_root(self: @TContractState) -> felt252;
+
     fn is_nullifier_spent(self: @TContractState, nullifier: felt252) -> bool;
-    /// Check if a root is known (current or historical)
-    /// This allows proofs to be generated against older roots
+
     fn is_root_known(self: @TContractState, root: felt252) -> bool;
-    /// Get the count of known historical roots
+
     fn get_known_roots_count(self: @TContractState) -> u32;
 }
-
