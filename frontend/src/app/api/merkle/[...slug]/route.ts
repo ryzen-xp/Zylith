@@ -1,61 +1,95 @@
-import { NextRequest, NextResponse } from "next/server";
-import { CONFIG } from "@/lib/config";
+import { NextRequest, NextResponse } from 'next/server'
+import { CONFIG } from '@/lib/config'
 
+/**
+ * Proxy route for ASP (Association Set Provider) server
+ * Forwards all requests to the ASP server running on localhost:3000
+ */
 export async function GET(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ slug: string[] }> }
 ) {
-  // #region agent log
-  fetch('http://127.0.0.1:7246/ingest/e1dd4cf6-226a-4b8e-92cd-9b8cf5fee932',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:GET:entry',message:'Merkle API route called',data:{aspUrl:CONFIG.ASP_SERVER_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-  // #endregion
-  
-  const { slug } = await params;
-  const slugPath = slug.join("/");
-  const url = `${CONFIG.ASP_SERVER_URL}/${slugPath}`;
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7246/ingest/e1dd4cf6-226a-4b8e-92cd-9b8cf5fee932',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:GET:before-fetch',message:'About to fetch ASP',data:{url,slugPath},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
-  
   try {
-    // #region agent log
-    fetch('http://127.0.0.1:7246/ingest/e1dd4cf6-226a-4b8e-92cd-9b8cf5fee932',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:GET:fetch-start',message:'Fetch started',data:{url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
+    const { slug: slugArray } = await params
+    const slug = slugArray || []
+    const path = slug.join('/')
     
-    const response = await fetch(url);
+    // Build URL to ASP server
+    const aspUrl = CONFIG.ASP_SERVER_URL || 'http://localhost:3000'
+    const url = `${aspUrl}/${path}`
     
-    // #region agent log
-    fetch('http://127.0.0.1:7246/ingest/e1dd4cf6-226a-4b8e-92cd-9b8cf5fee932',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:GET:fetch-response',message:'Fetch response received',data:{ok:response.ok,status:response.status,statusText:response.statusText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
+    // Forward query parameters
+    const searchParams = request.nextUrl.searchParams.toString()
+    const fullUrl = searchParams ? `${url}?${searchParams}` : url
+    
+    // Forward request to ASP server
+    const response = await fetch(fullUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
     
     if (!response.ok) {
-      // #region agent log
-      fetch('http://127.0.0.1:7246/ingest/e1dd4cf6-226a-4b8e-92cd-9b8cf5fee932',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:GET:response-not-ok',message:'Response not OK',data:{status:response.status,statusText:response.statusText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
+      const errorText = await response.text().catch(() => 'Unknown error')
       return NextResponse.json(
-        { error: `ASP Error: ${response.statusText}` },
+        { error: `ASP server error: ${response.status} ${response.statusText}`, details: errorText },
         { status: response.status }
-      );
+      )
     }
-    const data = await response.json();
     
-    // Add caching headers
-    const headers = new Headers();
-    headers.set("Cache-Control", "s-maxage=60, stale-while-revalidate=30");
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7246/ingest/e1dd4cf6-226a-4b8e-92cd-9b8cf5fee932',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:GET:success',message:'Request successful',data:{hasData:!!data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
-    
-    return NextResponse.json(data, { headers });
+    const data = await response.json()
+    return NextResponse.json(data)
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7246/ingest/e1dd4cf6-226a-4b8e-92cd-9b8cf5fee932',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:GET:catch',message:'Fetch error caught',data:{errorName:error?.constructor?.name,errorMessage:error instanceof Error ? error.message : String(error),url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
+    console.error('ASP proxy error:', error)
     return NextResponse.json(
-      { error: "Failed to fetch from ASP" },
+      { error: 'Failed to connect to ASP server', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
-    );
+    )
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string[] }> }
+) {
+  try {
+    const { slug: slugArray } = await params
+    const slug = slugArray || []
+    const path = slug.join('/')
+    
+    // Build URL to ASP server
+    const aspUrl = CONFIG.ASP_SERVER_URL || 'http://localhost:3000'
+    const url = `${aspUrl}/${path}`
+    
+    // Get request body
+    const body = await request.json().catch(() => ({}))
+    
+    // Forward request to ASP server
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error')
+      return NextResponse.json(
+        { error: `ASP server error: ${response.status} ${response.statusText}`, details: errorText },
+        { status: response.status }
+      )
+    }
+    
+    const data = await response.json()
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('ASP proxy error:', error)
+    return NextResponse.json(
+      { error: 'Failed to connect to ASP server', details: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    )
   }
 }
 
