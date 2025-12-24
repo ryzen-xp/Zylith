@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 232 47% 10%;
+    --foreground: 0 0% 100%;
+
+    --card: 232 47% 10%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 232 47% 10%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 190 100% 50%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 250 100% 69%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 190 100% 50%;
+
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: var(--font-inter), system-ui, sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-space), system-ui, sans-serif;
+  }
+  
+  code, pre {
+    font-family: var(--font-mono), monospace;
+  }
+}
+
+body {
+  background-color: #0A0E27;
+  color: white;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0E27; 
+}
+ 
+::-webkit-scrollbar-thumb {
+  background: #1A1F2E; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2D3748; 
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(123, 97, 255, 0.3);
+  color: white;
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid #00D4FF;
+  outline-offset: 2px;
+}
+
+/* Glassmorphism effect */
+.glass {
+  background: rgba(26, 31, 46, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #00D4FF 0%, #7B61FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
