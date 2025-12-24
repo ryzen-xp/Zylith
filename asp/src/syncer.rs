@@ -1,7 +1,7 @@
 use crate::merkle::MerkleTree;
 use num_bigint::BigUint;
 use starknet::{
-    core::types::{BlockId, EventFilter, Felt},
+    core::types::{BlockId, EventFilter, FieldElement},
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider},
 };
 use std::fs;
@@ -25,9 +25,9 @@ struct SyncerState {
 
 pub struct Syncer {
     pub provider: Arc<JsonRpcClient<HttpTransport>>,
-    pub contract_address: Felt,
+    pub contract_address: FieldElement,
     pub tree: Arc<Mutex<MerkleTree>>,
-    pub deposit_selector: Felt,
+    pub deposit_selector: FieldElement,
 }
 
 impl Syncer {
@@ -35,8 +35,8 @@ impl Syncer {
         let provider = Arc::new(JsonRpcClient::new(HttpTransport::new(
             Url::parse(rpc_url).unwrap(),
         )));
-        let contract_address = Felt::from_hex(contract_address).unwrap();
-        let deposit_selector = Felt::from_hex(DEPOSIT_EVENT_SELECTOR).unwrap();
+        let contract_address = FieldElement::from_hex_be(contract_address).unwrap();
+        let deposit_selector = FieldElement::from_hex_be(DEPOSIT_EVENT_SELECTOR).unwrap();
 
         Self {
             provider,
