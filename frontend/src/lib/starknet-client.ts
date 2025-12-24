@@ -1,5 +1,6 @@
 import { Contract, RpcProvider } from "starknet";
 import { CONFIG } from "./config";
+import { getZylithContract } from "./contracts/zylith-contract";
 
 export class StarknetClient {
   private provider: RpcProvider;
@@ -16,11 +17,13 @@ export class StarknetClient {
     return new Contract(abi, address, this.provider);
   }
 
-  async getZylithContract() {
-    // ABI would be imported here or fetched
-    // For now returning basic contract wrapper
-    // We'll need the ABI for Zylith
-    return new Contract([], CONFIG.ZYLITH_CONTRACT, this.provider);
+  /**
+   * Get Zylith contract instance
+   * @param account Optional account for write operations
+   * @returns Zylith contract instance
+   */
+  getZylithContract(account?: any) {
+    return getZylithContract(account);
   }
 }
 
