@@ -60,7 +60,7 @@ function TransactionItem({ transaction }: { transaction: any }) {
             {transaction.hash.slice(0, 10)}...{transaction.hash.slice(-8)}
           </div>
           <div className="text-xs text-muted-foreground">
-            {new Date(transaction.timestamp * 1000).toLocaleString()}
+            {new Date(transaction.timestamp).toLocaleString()}
           </div>
         </div>
       </div>
