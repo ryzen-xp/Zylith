@@ -3,9 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { usePortfolio } from "@/hooks/use-portfolio"
 import { TOKENS } from "@/lib/config"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, HelpCircle } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function BalanceDisplay() {
   const { getTotalBalance, notes } = usePortfolio()
@@ -17,12 +18,32 @@ export function BalanceDisplay() {
     notes: notes.filter(n => n.tokenAddress === token.address)
   }))
 
-  const totalValue = totalByToken.reduce((sum, item) => sum + Number(item.balance), 0)
+  // Calculate total value (simplified - would need price oracle in production)
+  const totalValue = totalByToken.reduce((sum, item) => {
+    // Simplified: assume 1 unit = $1 for demo
+    const balanceInUnits = Number(item.balance) / Math.pow(10, item.token.decimals)
+    return sum + balanceInUnits
+  }, 0)
 
   return (
     <Card className="bg-stark-dark border-stark-gray/10">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Private Balance</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle>Private Balance</CardTitle>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="text-sm">
+                  Your private balance is the sum of all your private notes. Each note represents a private token commitment 
+                  stored in the Merkle tree. Your balance remains private until you withdraw.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <Button
           variant="ghost"
           size="icon"
@@ -44,7 +65,9 @@ export function BalanceDisplay() {
                 <span>{token.symbol}</span>
               </div>
               <span className="font-medium">
-                {isVisible ? balance.toString() : "•••"}
+                {isVisible 
+                  ? (Number(balance) / Math.pow(10, token.decimals)).toFixed(4)
+                  : "•••"}
               </span>
               <span className="text-xs text-muted-foreground">
                 ({notes.length} notes)
