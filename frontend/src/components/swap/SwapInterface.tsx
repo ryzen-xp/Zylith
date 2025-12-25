@@ -16,7 +16,8 @@ import { toBigInt } from "@/lib/commitment"
 import { getUserFriendlyError } from "@/lib/error-messages"
 import { ConfirmationDialog } from "@/components/shared/ConfirmationDialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { HelpCircle } from "lucide-react"
+import { HelpCircle, ArrowRight, Wallet } from "lucide-react"
+import Link from "next/link"
 
 export function SwapInterface() {
   const [inputToken, setInputToken] = useState(TOKENS[0])
@@ -52,12 +53,68 @@ export function SwapInterface() {
   const totalBalance = getTotalBalance(inputToken.address)
   
   // Calculate amount in smallest unit (assuming 18 decimals for demo)
-  const amountBigInt = amount ? toBigInt(amount) * BigInt(10 ** 18) : 0n
+  // Handle empty string, "0", "0.0", etc. as 0
+  const amountValue = amount?.trim() || "0"
+  const amountNum = parseFloat(amountValue) || 0
+  const amountBigInt = amountNum > 0 ? toBigInt(amountValue) * BigInt(10 ** 18) : BigInt(0)
 
   // Find suitable note (either selected or first with enough balance)
-  const selectedNote = selectedNoteIndex !== null 
+  const selectedNote = selectedNoteIndex !== null && availableNotes[selectedNoteIndex] !== undefined
     ? availableNotes[selectedNoteIndex] 
     : availableNotes.find(n => n.amount >= amountBigInt)
+  
+  // Check if amount is valid (greater than 0)
+  const isValidAmount = amountNum > 0 && amountBigInt > BigInt(0)
+  
+  // Determine button disabled state and message
+  const getButtonState = () => {
+    if (isLoading) {
+      return { disabled: true, text: "Processing...", reason: "loading" }
+    }
+    
+    if (!isValidAmount) {
+      return { disabled: true, text: "Enter amount", reason: "no_amount" }
+    }
+    
+    if (isPrivate) {
+      if (availableNotes.length === 0) {
+        return { disabled: true, text: "No notes available - Deposit first", reason: "no_notes" }
+      }
+      
+      if (!selectedNote) {
+        return { disabled: true, text: `Insufficient balance - Need ${amount} ${inputToken.symbol}`, reason: "insufficient_balance" }
+      }
+      
+      // Check if note has index (leaf index is required for Merkle proof)
+      if (selectedNote.index === undefined) {
+        return { disabled: true, text: "Note not synced - Please wait", reason: "note_not_synced" }
+      }
+    }
+    
+    return { disabled: false, text: isPrivate ? "Private Swap" : "Swap", reason: "ready" }
+  }
+  
+  const buttonState = getButtonState()
+  
+  // Debug info (remove in production)
+  useEffect(() => {
+    console.log("Swap Button State:", {
+      isLoading,
+      amount,
+      amountValue,
+      amountNum,
+      amountBigInt: amountBigInt.toString(),
+      isValidAmount,
+      isPrivate,
+      availableNotesCount: availableNotes.length,
+      selectedNote: selectedNote ? {
+        amount: selectedNote.amount.toString(),
+        index: selectedNote.index,
+        commitment: selectedNote.commitment.toString()
+      } : null,
+      buttonState
+    })
+  }, [isLoading, amount, amountValue, amountNum, amountBigInt, isValidAmount, isPrivate, availableNotes.length, selectedNote, buttonState])
 
   const executeSwapAction = async () => {
     if (!amount || amountBigInt === 0n) {
@@ -247,8 +304,43 @@ export function SwapInterface() {
         {/* Price Info */}
         <div className="flex justify-between text-xs px-2 text-muted-foreground">
           <span>Rate</span>
-          <span>1 {inputToken.symbol} ≈ 1 {outputToken.symbol}</span>
+          <span className="text-yellow-400">
+            Calculando desde pool...
+            {/* TODO: Implementar cálculo real del rate desde el estado del pool CLMM
+            El rate actual (1:1) es temporal. Necesitamos:
+            1. Obtener sqrtPriceX128 del pool
+            2. Calcular el precio real usando la fórmula del CLMM
+            3. Calcular el output amount basado en la liquidez del pool
+            */}
+          </span>
         </div>
+        
+        {/* No Notes Warning */}
+        {isPrivate && availableNotes.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-4"
+          >
+            <div className="flex items-start gap-3">
+              <Wallet className="h-5 w-5 text-yellow-400 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold text-yellow-400 mb-1">No notes available</p>
+                <p className="text-sm text-yellow-300/80 mb-3">
+                  Para hacer un swap privado, primero necesitas depositar tokens. Esto creará una "nota privada" que podrás usar para hacer swaps.
+                </p>
+                <Link
+                  href="/portfolio"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-yellow-300 text-sm font-medium transition-colors"
+                >
+                  <Wallet className="h-4 w-4" />
+                  Ir a Portfolio para Depositar
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Success Display */}
         {successTxHash && (
@@ -290,13 +382,50 @@ export function SwapInterface() {
           </motion.div>
         )}
 
+        {/* Debug Info - Always show for troubleshooting */}
+        <div className="text-xs text-muted-foreground p-2 bg-stark-darker rounded border border-stark-gray/10 space-y-1">
+          <div className="flex justify-between">
+            <span>Amount:</span>
+            <span>{amount || "empty"} → {amountNum} → {amountBigInt.toString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Valid Amount:</span>
+            <span className={isValidAmount ? "text-green-400" : "text-red-400"}>{isValidAmount ? "Yes" : "No"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Notes Available:</span>
+            <span>{availableNotes.length} note{availableNotes.length !== 1 ? 's' : ''}</span>
+          </div>
+          {isPrivate && (
+            <>
+              <div className="flex justify-between">
+                <span>Selected Note:</span>
+                <span>{selectedNote ? `Yes (Index: ${selectedNote.index ?? "N/A"})` : "No"}</span>
+              </div>
+              {selectedNote && (
+                <div className="flex justify-between">
+                  <span>Note Balance:</span>
+                  <span>{selectedNote.amount.toString()} wei</span>
+                </div>
+              )}
+            </>
+          )}
+          <div className="flex justify-between pt-1 border-t border-stark-gray/10">
+            <span className="font-semibold">Button State:</span>
+            <span className={buttonState.disabled ? "text-yellow-400" : "text-green-400"}>
+              {buttonState.text} ({buttonState.reason})
+            </span>
+          </div>
+        </div>
+
         {/* Action Button */}
         <Button 
-          className="w-full h-12 text-lg font-medium bg-stark-blue hover:bg-stark-blue/90 text-white shadow-[0_0_20px_rgba(0,212,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full h-12 text-lg font-medium bg-stark-blue hover:bg-stark-blue/90 text-white shadow-[0_0_20px_rgba(0,212,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-stark-blue"
           onClick={handleSwap}
-          disabled={isLoading || !amount || amountBigInt === 0n || (isPrivate && !selectedNote)}
+          disabled={buttonState.disabled}
+          title={buttonState.disabled ? `Disabled: ${buttonState.reason}` : "Click to swap"}
         >
-          {isLoading ? "Processing..." : isPrivate ? "Private Swap" : "Swap"}
+          {buttonState.text}
         </Button>
 
         {/* Progress */}

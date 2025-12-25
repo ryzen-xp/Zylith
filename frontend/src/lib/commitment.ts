@@ -73,8 +73,46 @@ export function toHex(value: bigint): string {
 
 /**
  * Parse hex string or number to BigInt
+ * Handles decimal numbers by converting to string first
  */
 export function toBigInt(value: string | number | bigint): bigint {
-  return BigInt(value);
+  if (typeof value === 'bigint') {
+    return value;
+  }
+  
+  if (typeof value === 'number') {
+    // BigInt cannot handle decimals, so convert to string first
+    // This will truncate decimals (e.g., 0.5 becomes 0)
+    if (Number.isInteger(value)) {
+      return BigInt(value);
+    } else {
+      // For decimals, convert to string and parse
+      // This truncates the decimal part
+      return BigInt(Math.floor(value));
+    }
+  }
+  
+  // String: handle hex or decimal
+  if (typeof value === 'string') {
+    // Remove whitespace
+    const trimmed = value.trim();
+    
+    // Handle hex strings
+    if (trimmed.startsWith('0x') || trimmed.startsWith('0X')) {
+      return BigInt(trimmed);
+    }
+    
+    // Handle decimal strings (may contain decimal point)
+    if (trimmed.includes('.')) {
+      // Parse float and truncate to integer
+      const floatValue = parseFloat(trimmed);
+      return BigInt(Math.floor(floatValue));
+    }
+    
+    // Regular integer string
+    return BigInt(trimmed);
+  }
+  
+  throw new Error(`Cannot convert ${value} to BigInt`);
 }
 
