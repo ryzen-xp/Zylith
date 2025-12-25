@@ -26,9 +26,14 @@ export function TransactionHistory() {
         <CardTitle>Transaction History</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {transactions.map((tx) => (
-          <TransactionItem key={tx.hash} transaction={tx} />
-        ))}
+        {transactions
+          .filter((tx, index, self) => 
+            // Remove duplicates: keep only the first occurrence of each hash
+            index === self.findIndex(t => t.hash === tx.hash)
+          )
+          .map((tx) => (
+            <TransactionItem key={tx.hash} transaction={tx} />
+          ))}
       </CardContent>
     </Card>
   )
@@ -46,7 +51,8 @@ function TransactionItem({ transaction }: { transaction: any }) {
     swap: "Swap",
     withdraw: "Withdraw",
     mint: "Add Liquidity",
-    burn: "Remove Liquidity"
+    burn: "Remove Liquidity",
+    initialize: "Initialize Pool"
   }
 
   return (

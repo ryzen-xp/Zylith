@@ -4,6 +4,7 @@ import { BalanceDisplay } from "@/components/portfolio/BalanceDisplay"
 import { NotesList } from "@/components/portfolio/NotesList"
 import { TransactionHistory } from "@/components/portfolio/TransactionHistory"
 import { DepositForm } from "@/components/portfolio/DepositForm"
+import { InitializePoolButton } from "@/components/admin/InitializePoolButton"
 
 export default function PortfolioPage() {
   return (
@@ -17,6 +18,8 @@ export default function PortfolioPage() {
             View your private balances and transaction history.
           </p>
         </div>
+
+        <InitializePoolButton />
 
         <DepositForm />
 
