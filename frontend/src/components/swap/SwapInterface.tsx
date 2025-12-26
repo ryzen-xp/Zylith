@@ -28,9 +28,15 @@ export function SwapInterface() {
   const [successTxHash, setSuccessTxHash] = useState<string | null>(null)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [pendingSwap, setPendingSwap] = useState<(() => void) | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
   
   const { executeSwap, isLoading, error, proofStep } = usePrivateSwap()
   const { getNotesByToken, getTotalBalance, transactions } = usePortfolio()
+
+  // Handle client-side mounting to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // Get latest successful swap transaction
   useEffect(() => {
@@ -48,15 +54,54 @@ export function SwapInterface() {
     }
   }, [transactions, proofStep, isLoading])
 
-  // Get available notes for input token
-  const availableNotes = getNotesByToken(inputToken.address)
-  const totalBalance = getTotalBalance(inputToken.address)
+  // Get available notes for input token (only after mount to avoid hydration mismatch)
+  const availableNotes = isMounted ? getNotesByToken(inputToken.address) : []
+  const totalBalance = isMounted ? getTotalBalance(inputToken.address) : 0n
   
   // Calculate amount in smallest unit (assuming 18 decimals for demo)
   // Handle empty string, "0", "0.0", etc. as 0
+  // Use same logic as DepositForm to properly handle decimals
+  const decimals = 18 // Assuming 18 decimals for all tokens
+  const amountBigInt = amount ? (() => {
+    const trimmed = amount.trim()
+    if (!trimmed || trimmed === '0' || trimmed === '0.0' || trimmed === '0.00') {
+      return 0n
+    }
+    
+    // Parse as float to handle decimals
+    const floatValue = parseFloat(trimmed)
+    if (isNaN(floatValue) || floatValue <= 0) {
+      return 0n
+    }
+    
+    // Multiply by 10^decimals to get smallest unit, then convert to BigInt
+    // Use string manipulation to avoid precision loss
+    const parts = trimmed.split('.')
+    if (parts.length === 1) {
+      // Integer: "1" -> 1 * 10^18
+      return BigInt(trimmed) * BigInt(10 ** decimals)
+    } else {
+      // Decimal: "0.01" -> "01" -> 1 * 10^16 (18-2)
+      const integerPart = parts[0] || '0'
+      const decimalPart = parts[1] || ''
+      const decimalPlaces = decimalPart.length
+      
+      // Pad or truncate decimal part to match token decimals
+      let adjustedDecimal = decimalPart
+      if (decimalPlaces < decimals) {
+        adjustedDecimal = decimalPart.padEnd(decimals, '0')
+      } else if (decimalPlaces > decimals) {
+        adjustedDecimal = decimalPart.substring(0, decimals)
+      }
+      
+      // Combine: integerPart + adjustedDecimal = total in smallest units
+      const totalString = integerPart + adjustedDecimal
+      return BigInt(totalString)
+    }
+  })() : 0n
+  
   const amountValue = amount?.trim() || "0"
   const amountNum = parseFloat(amountValue) || 0
-  const amountBigInt = amountNum > 0 ? toBigInt(amountValue) * BigInt(10 ** 18) : BigInt(0)
 
   // Find suitable note (either selected or first with enough balance)
   const selectedNote = selectedNoteIndex !== null && availableNotes[selectedNoteIndex] !== undefined
@@ -435,12 +480,25 @@ export function SwapInterface() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
+              className="overflow-hidden space-y-3"
             >
               <ProofProgress 
                 currentStep={proofStep} 
                 error={error || undefined} 
               />
+              {proofStep === "computing_proof" && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-lg bg-blue-950/20 border border-blue-500/30"
+                >
+                  <p className="text-sm text-blue-300">
+                    💡 <strong>Generating ZK proof...</strong> This is the most time-consuming step. 
+                    The circuit is processing ~22,000 constraints, which typically takes 2-3 minutes. 
+                    Please keep this window open.
+                  </p>
+                </motion.div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

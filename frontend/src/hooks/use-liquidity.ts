@@ -75,7 +75,7 @@ export function useLiquidity() {
       setState(prev => ({ ...prev, proofStep: "generating_witness" }))
       // TODO: Calculate actual change amount based on liquidity calculation
       const changeAmount = inputNote.amount // Simplified: assume full amount for now
-      const changeNote = generateNote(changeAmount, inputNote.tokenAddress)
+      const changeNote = await generateNote(changeAmount, inputNote.tokenAddress)
 
       // Step 3: Generate ZK Proof via Backend API
       setState(prev => ({ ...prev, proofStep: "computing_proof" }))
@@ -272,7 +272,7 @@ export function useLiquidity() {
       setState(prev => ({ ...prev, proofStep: "generating_witness" }))
       // TODO: Calculate actual output amount based on liquidity calculation
       const outputAmount = inputNote.amount // Simplified
-      const outputNote = generateNote(outputAmount, inputNote.tokenAddress)
+      const outputNote = await generateNote(outputAmount, inputNote.tokenAddress)
 
       // Step 3: Generate ZK Proof
       setState(prev => ({ ...prev, proofStep: "computing_proof" }))
@@ -456,7 +456,7 @@ export function useLiquidity() {
       setState(prev => ({ ...prev, proofStep: "generating_witness" }))
       // TODO: Calculate actual fees collected
       const outputAmount = inputNote.amount // Simplified
-      const outputNote = generateNote(outputAmount, inputNote.tokenAddress)
+      const outputNote = await generateNote(outputAmount, inputNote.tokenAddress)
 
       // Step 3: Generate ZK Proof
       setState(prev => ({ ...prev, proofStep: "computing_proof" }))

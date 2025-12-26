@@ -1,8 +1,12 @@
 "use client"
 
 import { SwapInterface } from "@/components/swap/SwapInterface"
+import { useSyncNotes } from "@/hooks/use-sync-notes"
 
 export default function SwapPage() {
+  // Automatically sync note indices from ASP
+  useSyncNotes()
+  
   return (
     <div className="container flex items-center justify-center min-h-[calc(100vh-80px)] py-10">
       <div className="w-full max-w-[480px] space-y-8">

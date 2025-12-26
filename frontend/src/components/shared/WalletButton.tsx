@@ -18,6 +18,13 @@ export function WalletButton() {
   const { disconnect } = useDisconnect()
   const [isOpen, setIsOpen] = useState(false)
 
+  // Debug: Log connectors and status
+  useEffect(() => {
+    console.log("[WalletButton] Status:", status)
+    console.log("[WalletButton] Connectors:", connectors.length, connectors.map(c => c.name))
+    console.log("[WalletButton] Address:", address)
+  }, [status, connectors, address])
+
   // Shorten address
   const shortenedAddress = address 
     ? `${address.slice(0, 6)}...${address.slice(-4)}` 

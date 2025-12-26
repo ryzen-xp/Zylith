@@ -13,7 +13,8 @@ export function useASP() {
   const treeInfoQuery = useQuery({
     queryKey: ["asp", "treeInfo"],
     queryFn: () => aspClient.getTreeInfo(),
-    refetchInterval: 10000, // Update every 10s
+    refetchInterval: 30000, // Update every 30s (reduced from 10s to reduce noise)
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   })
 
   const useMerkleProof = (index?: number) => {

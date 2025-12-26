@@ -2,6 +2,8 @@ import { Contract, Account, RpcProvider } from "starknet";
 import { CONFIG } from "../config";
 import zylithAbi from "../abis/zylith-abi.json";
 
+// Import CONFIG for contract address
+
 /**
  * Zylith Contract Client
  * Provides helper functions to interact with the Zylith Cairo contract
@@ -116,6 +118,53 @@ export class ZylithContractClient {
     newCommitment: bigint
   ) {
     const contract = this.getContract(account);
+    
+    // Log the actual calldata that will be sent to Starknet
+    // Build calldata manually to see what will be sent
+    try {
+      // The calldata format for private_swap is:
+      // [proof_len, ...proof, public_inputs_len, ...public_inputs, zeroForOne, amountSpecified, sqrtPriceLimitX128.low, sqrtPriceLimitX128.high, newCommitment]
+      const calldata = [
+        proof.length.toString(),
+        ...proof,
+        publicInputs.length.toString(),
+        ...publicInputs,
+        zeroForOne ? "1" : "0",
+        amountSpecified.toString(),
+        sqrtPriceLimitX128.low.toString(),
+        sqrtPriceLimitX128.high.toString(),
+        newCommitment.toString()
+      ];
+      
+      console.log(`[Contract] 📋 ACTUAL CALLDATA TO BE SENT:`);
+      console.log(`[Contract] 📋 Contract Address:`, CONFIG.ZYLITH_CONTRACT);
+      console.log(`[Contract] 📋 Entrypoint: private_swap`);
+      console.log(`[Contract] 📋 Calldata (${calldata.length} elements):`, JSON.stringify(calldata, null, 2));
+      
+      // Check each calldata value for overflow
+      const STARKNET_FELT_MAX = BigInt("3618502788666131106986593281521497120414687020801267626233049500247285301248");
+      let hasOverflow = false;
+      calldata.forEach((val: string, idx: number) => {
+        try {
+          const bigVal = BigInt(val);
+          if (bigVal >= STARKNET_FELT_MAX) {
+            console.error(`[Contract] ❌ Calldata[${idx}] OVERFLOW: ${val} (>= ${STARKNET_FELT_MAX.toString()})`);
+            hasOverflow = true;
+          }
+        } catch (e) {
+          console.warn(`[Contract] ⚠️  Calldata[${idx}] could not be checked: ${val}`);
+        }
+      });
+      
+      if (hasOverflow) {
+        console.error(`[Contract] ❌ OVERFLOW DETECTED IN CALLDATA! Transaction will fail.`);
+      } else {
+        console.log(`[Contract] ✅ No overflow detected in calldata.`);
+      }
+    } catch (logError) {
+      console.warn(`[Contract] ⚠️  Could not build calldata for logging:`, logError);
+    }
+    
     return await contract.private_swap(
       proof,
       publicInputs,

@@ -1,9 +1,10 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Check, Loader2, X } from "lucide-react"
+import { Check, Loader2, X, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
 
 export type ProofStep = 
   | "idle"
@@ -24,9 +25,10 @@ interface ProofProgressProps {
 
 const DEFAULT_STEPS: { id: ProofStep; label: string; estimatedTime?: number }[] = [
   { id: "fetching_merkle", label: "Fetching Merkle Proof", estimatedTime: 1 },
-  { id: "generating_witness", label: "Generating Witness", estimatedTime: 2 },
-  { id: "computing_proof", label: "Computing Zero-Knowledge Proof", estimatedTime: 10 },
+  { id: "generating_witness", label: "Generating Witness", estimatedTime: 5 },
+  { id: "computing_proof", label: "Computing Zero-Knowledge Proof", estimatedTime: 180 }, // Can take 2-3 minutes
   { id: "formatting", label: "Formatting for Verifier", estimatedTime: 1 },
+  { id: "verifying", label: "Verifying Transaction", estimatedTime: 5 },
 ]
 
 // Estimated total time in seconds
@@ -38,9 +40,43 @@ export function ProofProgress({
   error,
   onCancel 
 }: ProofProgressProps) {
+  // Track elapsed time for current step
+  const [elapsedTime, setElapsedTime] = useState(0)
+  
   const currentStepIndex = steps.findIndex(s => s.id === currentStep)
+  // If currentStep is "verifying" or "complete", treat all steps as complete
   const isComplete = currentStep === "complete" || currentStep === "verifying"
   const isError = currentStep === "error"
+  
+  // If verifying or complete, show all steps as complete
+  const effectiveStepIndex = (currentStep === "verifying" || currentStep === "complete") 
+    ? steps.length 
+    : currentStepIndex
+  
+  // Reset elapsed time and log when currentStep changes
+  useEffect(() => {
+    const currentStepIndex = steps.findIndex(s => s.id === currentStep)
+    const isComplete = currentStep === "complete" || currentStep === "verifying"
+    const isError = currentStep === "error"
+    const effectiveStepIndex = (currentStep === "verifying" || currentStep === "complete") 
+      ? steps.length 
+      : currentStepIndex
+    
+    console.log(`[ProofProgress] ✅ Current step changed to: "${currentStep}", index: ${currentStepIndex}, effectiveIndex: ${effectiveStepIndex}`);
+    
+    // Reset elapsed time when step changes
+    setElapsedTime(0)
+    
+    if (isComplete || isError || currentStep === "idle") {
+      return
+    }
+    
+    const interval = setInterval(() => {
+      setElapsedTime(prev => prev + 1)
+    }, 1000)
+    
+    return () => clearInterval(interval)
+  }, [currentStep, steps]) // Only depend on currentStep and steps to avoid unnecessary re-runs
   
   // Calculate estimated remaining time
   const completedSteps = currentStepIndex >= 0 ? currentStepIndex : 0
@@ -49,15 +85,37 @@ export function ProofProgress({
     .slice(completedSteps)
     .reduce((sum, step) => sum + (step.estimatedTime || 0), 0)
 
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
   return (
     <div className="w-full space-y-4 p-4 rounded-lg bg-stark-darker/50 border border-stark-blue/10">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-medium text-white">Generating Private Proof</h3>
-          {!isComplete && !isError && estimatedRemaining > 0 && (
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Estimated time: ~{estimatedRemaining}s
-            </p>
+          {!isComplete && !isError && (
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {currentStep === "computing_proof" && (
+                <div className="flex items-center gap-1 text-xs text-stark-blue">
+                  <Clock className="h-3 w-3 animate-pulse" />
+                  <span>This step may take 2-3 minutes. Please wait...</span>
+                </div>
+              )}
+              {currentStep !== "computing_proof" && estimatedRemaining > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Estimated time remaining: ~{estimatedRemaining}s
+                </p>
+              )}
+              {elapsedTime > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Elapsed: {formatTime(elapsedTime)}
+                </p>
+              )}
+            </div>
           )}
         </div>
         {onCancel && !isComplete && !isError && (
@@ -89,8 +147,10 @@ export function ProofProgress({
              status = "pending" // Placeholder
           }
           
-          // Better logic:
-          const isStepComplete = isComplete || (currentStepIndex > index && currentStepIndex !== -1)
+          // Better logic: A step is complete if:
+          // 1. Overall process is complete, OR
+          // 2. Effective step index is greater than this step's index
+          const isStepComplete = isComplete || (effectiveStepIndex > index && effectiveStepIndex !== -1)
           const isStepCurrent = currentStep === step.id
           
           return (
@@ -111,12 +171,19 @@ export function ProofProgress({
                   <span>{index + 1}</span>
                 )}
               </div>
-              <span className={cn(
-                "text-sm transition-colors",
-                isStepComplete ? "text-white" : isStepCurrent ? "text-stark-blue font-medium" : "text-muted-foreground"
-              )}>
-                {step.label}
-              </span>
+              <div className="flex-1">
+                <span className={cn(
+                  "text-sm transition-colors",
+                  isStepComplete ? "text-white" : isStepCurrent ? "text-stark-blue font-medium" : "text-muted-foreground"
+                )}>
+                  {step.label}
+                </span>
+                {isStepCurrent && step.estimatedTime && step.estimatedTime > 10 && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    This may take {Math.floor(step.estimatedTime / 60)}-{Math.ceil(step.estimatedTime / 60)} minutes. Please be patient.
+                  </p>
+                )}
+              </div>
             </div>
           )
         })}

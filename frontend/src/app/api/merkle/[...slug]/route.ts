@@ -23,6 +23,7 @@ export async function GET(
     const fullUrl = searchParams ? `${url}?${searchParams}` : url
     
     // Forward request to ASP server
+    console.log(`[Proxy] Forwarding GET request to ASP: ${fullUrl}`);
     const response = await fetch(fullUrl, {
       method: 'GET',
       headers: {
@@ -30,8 +31,11 @@ export async function GET(
       },
     })
     
+    console.log(`[Proxy] ASP response status: ${response.status}`);
+    
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error')
+      console.error(`[Proxy] ASP error: ${response.status} - ${errorText}`);
       return NextResponse.json(
         { error: `ASP server error: ${response.status} ${response.statusText}`, details: errorText },
         { status: response.status }
@@ -39,6 +43,7 @@ export async function GET(
     }
     
     const data = await response.json()
+    console.log(`[Proxy] ✅ Successfully forwarded response from ASP`);
     return NextResponse.json(data)
   } catch (error) {
     console.error('ASP proxy error:', error)

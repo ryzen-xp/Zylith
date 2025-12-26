@@ -27,27 +27,74 @@ export class ASPClient {
   private async fetch<T>(endpoint: string, options?: RequestInit, useDirectUrl = false): Promise<T> {
     const baseUrl = useDirectUrl ? this.getAspUrl() : this.baseUrl;
     const url = `${baseUrl}${endpoint}`;
-    const response = await fetch(url, options);
     
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`ASP API Error: ${response.status} ${response.statusText} - ${errorText}`);
+    console.log(`[ASP Client] Fetching: ${url}`);
+    const startTime = Date.now();
+    
+    try {
+      const response = await fetch(url, options);
+      const elapsed = Date.now() - startTime;
+      
+      console.log(`[ASP Client] Response status: ${response.status} (${elapsed}ms)`);
+      
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "Unknown error");
+        console.error(`[ASP Client] Error response: ${errorText}`);
+        throw new Error(`ASP API Error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log(`[ASP Client] ✅ Successfully received response for ${endpoint}`);
+      return data;
+    } catch (error) {
+      const elapsed = Date.now() - startTime;
+      console.error(`[ASP Client] ❌ Fetch failed after ${elapsed}ms:`, error);
+      throw error;
     }
-    
-    return response.json();
   }
 
   // Merkle proof methods (use proxy)
   async getMerkleProof(index: number): Promise<MerkleProof> {
-    return this.fetch<MerkleProof>(`/deposit/proof/${index}`);
+    console.log(`[ASP Client] Requesting Merkle proof for index ${index}...`);
+    const proof = await this.fetch<MerkleProof>(`/deposit/proof/${index}`, undefined, true); // Use direct ASP URL
+    console.log(`[ASP Client] ✅ Merkle proof received:`, {
+      root: proof.root?.substring(0, 20) + '...',
+      leaf: proof.leaf?.substring(0, 20) + '...',
+      pathLength: proof.path?.length || 0,
+      pathIndicesLength: proof.path_indices?.length || 0,
+    });
+    return proof;
   }
 
   async getCurrentRoot(): Promise<string> {
-    return this.fetch<string>(`/deposit/root`);
+    return this.fetch<string>(`/deposit/root`, undefined, true); // Use direct ASP URL
   }
 
   async getTreeInfo(): Promise<TreeInfo> {
-    return this.fetch<TreeInfo>(`/deposit/info`);
+    return this.fetch<TreeInfo>(`/deposit/info`, undefined, true); // Use direct ASP URL
+  }
+
+  async getDepositIndex(commitment: string | bigint): Promise<{ index?: number; found: boolean; message?: string }> {
+    // Convert BigInt to hex string if needed
+    let commitmentStr: string;
+    if (typeof commitment === 'bigint') {
+      commitmentStr = commitment.toString(16);
+    } else {
+      commitmentStr = commitment;
+    }
+    
+    // Remove 0x prefix if present for the path
+    const commitmentPath = commitmentStr.startsWith('0x') ? commitmentStr.slice(2) : commitmentStr;
+    
+    console.log(`[ASP Client] Getting deposit index for commitment: ${commitmentPath.substring(0, 20)}...`)
+    
+    return this.fetch<{ index?: number; found: boolean; message?: string }>(
+      `/deposit/index/${commitmentPath}`,
+      {
+        method: "GET",
+      },
+      true // Use direct ASP URL
+    );
   }
 
   async getHealth(): Promise<{ status: string }> {
@@ -234,6 +281,25 @@ export class ASPClient {
         }),
       },
       true
+    );
+  }
+
+  async generateSwapProof(proofInputs: any): Promise<{
+    full_proof_with_hints: string[];
+    public_inputs: string[];
+  }> {
+    console.log("[ASP Client] Requesting ZK proof generation for swap...");
+    return this.fetch<{
+      full_proof_with_hints: string[];
+      public_inputs: string[];
+    }>(
+      "/api/proof/swap",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(proofInputs),
+      },
+      true // Use direct ASP URL
     );
   }
 }

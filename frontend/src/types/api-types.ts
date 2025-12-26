@@ -71,7 +71,7 @@ export interface DepositPrepareResponse {
 }
 
 export interface SwapPrepareResponse {
-  transactions: PreparedTransaction[]
+  merkle_proof: MerkleProof
   new_commitment: string
   output_note_data: NoteData
 }

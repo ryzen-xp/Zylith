@@ -99,33 +99,84 @@ export function usePrivateDeposit() {
       const depositTxHash = transactionHashes[transactionHashes.length - 1]
       const receipt = await provider.getTransactionReceipt(depositTxHash)
       
-      const DEPOSIT_EVENT_SELECTOR = '0x9149d2123147c5f43d258257fef0b7b969db78269369ebcf5ebb9eef8592f2'
+      // Event selectors for nested enum:
+      // keys[0] = Event enum selector (zylith::zylith::Zylith::Event)
+      // keys[1] = PrivacyEvent enum selector (zylith::privacy::deposit::PrivacyEvent)
+      // keys[2] = Deposit variant selector (zylith::privacy::deposit::PrivacyEvent::Deposit)
+      // The Deposit variant selector is: starknet_keccak("Deposit")
+      const DEPOSIT_VARIANT_SELECTOR = '0x9149d2123147c5f43d258257fef0b7b969db78269369ebcf5ebb9eef8592f2'
       
       let leafIndex: number | undefined
       
       // Check if receipt has events (type guard)
       if (receipt && 'events' in receipt && receipt.events) {
+        console.log('Searching for Deposit event in receipt...', {
+          totalEvents: receipt.events.length,
+          zylithContract: CONFIG.ZYLITH_CONTRACT,
+          expectedCommitment: prepareResponse.commitment
+        })
+        
+        // For nested enum events, we need to check keys[2] for the Deposit variant
+        // But we'll be more flexible and check all keys AND data structure
+        const expectedCommitment = BigInt(prepareResponse.commitment)
+        
         const depositEvent = receipt.events.find((event: any) => {
           const isFromZylith = event.from_address?.toLowerCase() === CONFIG.ZYLITH_CONTRACT.toLowerCase()
-          const hasDepositSelector = event.keys && event.keys[0] === DEPOSIT_EVENT_SELECTOR
-          return isFromZylith && hasDepositSelector
+          
+          if (!isFromZylith) return false
+          
+          // Check if any key matches the Deposit variant selector
+          // For nested enums, it could be in keys[0], keys[1], or keys[2]
+          const hasDepositSelector = event.keys && event.keys.some((key: string) => 
+            key === DEPOSIT_VARIANT_SELECTOR
+          )
+          
+          // Also check if data structure matches (3 elements: commitment, leaf_index, root)
+          // AND if the commitment matches what we expect
+          const hasCorrectData = event.data && event.data.length >= 3
+          const commitmentMatches = hasCorrectData && 
+            BigInt(event.data[0]) === expectedCommitment
+          
+          return hasDepositSelector || (hasCorrectData && commitmentMatches)
         })
 
-        if (depositEvent && depositEvent.data && depositEvent.data.length >= 3) {
-          // Deposit event structure: [commitment, leaf_index, root]
-          const eventCommitment = BigInt(depositEvent.data[0])
-          const expectedCommitment = BigInt(prepareResponse.commitment)
+        if (depositEvent) {
+          console.log('Found potential Deposit event:', {
+            keys: depositEvent.keys,
+            dataLength: depositEvent.data?.length,
+            data: depositEvent.data
+          })
           
-          // Verify commitment matches
-          if (eventCommitment === expectedCommitment) {
-            leafIndex = Number(depositEvent.data[1])
+          // Deposit event structure: [commitment, leaf_index, root]
+          if (depositEvent.data && depositEvent.data.length >= 3) {
+            const eventCommitment = BigInt(depositEvent.data[0])
+            const expectedCommitment = BigInt(prepareResponse.commitment)
+            
+            console.log('Comparing commitments:', {
+              eventCommitment: eventCommitment.toString(),
+              expectedCommitment: expectedCommitment.toString(),
+              match: eventCommitment === expectedCommitment
+            })
+            
+            // Verify commitment matches
+            if (eventCommitment === expectedCommitment) {
+              leafIndex = Number(depositEvent.data[1])
+              console.log('✅ Successfully extracted leaf_index:', leafIndex)
+            } else {
+              console.warn('Commitment mismatch in deposit event')
+            }
           }
+        } else {
+          console.warn('No Deposit event found in receipt. Available events:', 
+            receipt.events.map((e: any) => ({
+              from: e.from_address,
+              keys: e.keys,
+              dataLength: e.data?.length
+            }))
+          )
         }
-      }
-
-      // Fallback: If leaf index not found in events, log warning
-      if (leafIndex === undefined) {
-        console.warn('Leaf index not found in deposit event. ASP may need time to sync.')
+      } else {
+        console.warn('Receipt has no events or invalid structure:', receipt)
       }
 
       // Step 4: Create note from ASP response and save to portfolio
@@ -139,6 +190,39 @@ export function usePrivateDeposit() {
       }
 
       addNote(note)
+
+      // Fallback: If leaf index not found in events, try to query ASP after a delay
+      if (leafIndex === undefined) {
+        console.warn('Leaf index not found in deposit event. Will attempt to query ASP after sync delay.')
+        
+        // Wait a bit for ASP to sync, then try to get the index from ASP
+        setTimeout(async () => {
+          try {
+            // ASP expects hex string without 0x prefix
+            const commitmentStr = prepareResponse.commitment.startsWith('0x') 
+              ? prepareResponse.commitment.slice(2) 
+              : prepareResponse.commitment
+            const indexResponse = await aspClient.getDepositIndex(commitmentStr)
+            
+            if (indexResponse.found && indexResponse.index !== undefined) {
+              console.log('✅ Successfully retrieved leaf_index from ASP:', indexResponse.index)
+              
+              // Update the note with the index
+              const updatedNote: Note = {
+                ...note,
+                index: indexResponse.index,
+              }
+              // Update note in portfolio store
+              const { updateNote } = usePortfolioStore.getState()
+              updateNote(note.commitment, updatedNote)
+            } else {
+              console.warn('ASP does not have the commitment yet. It may need more time to sync.')
+            }
+          } catch (err) {
+            console.error('Failed to query ASP for leaf index:', err)
+          }
+        }, 5000) // Wait 5 seconds for ASP to sync
+      }
       
       // Update transaction statuses
       transactionHashes.forEach(hash => {
@@ -153,7 +237,7 @@ export function usePrivateDeposit() {
         
         if (receipt && 'events' in receipt && receipt.events) {
           const eventRoot = receipt.events.find((e: any) => 
-            e.keys?.[0] === DEPOSIT_EVENT_SELECTOR
+            e.keys?.some((key: string) => key === DEPOSIT_VARIANT_SELECTOR)
           )?.data?.[2]
           
           if (eventRoot && BigInt(eventRoot) !== BigInt(contractRoot.toString())) {

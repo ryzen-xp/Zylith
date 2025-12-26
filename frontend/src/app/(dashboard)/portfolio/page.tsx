@@ -5,8 +5,12 @@ import { NotesList } from "@/components/portfolio/NotesList"
 import { TransactionHistory } from "@/components/portfolio/TransactionHistory"
 import { DepositForm } from "@/components/portfolio/DepositForm"
 import { InitializePoolButton } from "@/components/admin/InitializePoolButton"
+import { useSyncNotes } from "@/hooks/use-sync-notes"
 
 export default function PortfolioPage() {
+  // Automatically sync note indices from ASP
+  useSyncNotes()
+  
   return (
     <div className="container py-10">
       <div className="max-w-4xl mx-auto space-y-8">

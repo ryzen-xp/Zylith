@@ -75,11 +75,28 @@ export class ProofService {
     }
 
     try {
+      console.log(`[ProofService] Starting proof generation for ${circuitName}...`);
+      console.log(`[ProofService] WASM: ${wasmPath}`);
+      console.log(`[ProofService] ZKey: ${zkeyPath}`);
+      console.log(`[ProofService] Input keys: ${Object.keys(inputs).join(', ')}`);
+      
+      const startTime = Date.now();
+      
+      // Log progress for large circuits
+      if (circuitName === "swap" || circuitName === "lp") {
+        console.log(`[ProofService] ⏳ Large circuit detected. This may take 2-5 minutes...`);
+        console.log(`[ProofService] Starting witness generation and proof computation...`);
+      }
+      
       const { proof, publicSignals } = await snarkjs.groth16.fullProve(
         inputs,
         wasmPath,
         zkeyPath
       );
+      
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`[ProofService] ✅ Proof generated successfully in ${elapsed}s`);
+      console.log(`[ProofService] Public signals count: ${publicSignals.length}`);
 
       const formatted = this.formatProofForGaraga(proof, publicSignals);
       
