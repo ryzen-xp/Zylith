@@ -48,20 +48,6 @@ extract_class_hash() {
     echo ""
 }
 
-# Function to check for class hash mismatch error
-check_class_hash_mismatch() {
-    if echo "$1" | grep -q "Mismatch compiled class hash"; then
-        return 0  # Mismatch detected
-    fi
-    return 1  # No mismatch
-}
-
-# Function to extract class hash from error message
-extract_existing_class_hash() {
-    echo "$1" | sed -n 's/.*class with hash \(0x[a-fA-F0-9]\+\).*/\1/p' | head -1 || \
-    echo ""
-}
-
 # Function to extract contract address from deploy output (macOS compatible)
 extract_address() {
     echo "$1" | sed -n 's/.*contract_address: \(0x[a-fA-F0-9]\+\).*/\1/p' | head -1 || \
@@ -121,49 +107,10 @@ log "  LPVerifier class_hash: $LP_HASH"
 # Declare Zylith main contract
 log "  Declaring Zylith..."
 ZYLITH_DECLARE=$(sncast --profile "$PROFILE" declare --contract-name "Zylith" 2>&1 || true)
-
-# Check for class hash mismatch error
-if check_class_hash_mismatch "$ZYLITH_DECLARE"; then
-    EXISTING_HASH=$(extract_existing_class_hash "$ZYLITH_DECLARE")
-    log "${RED}  ERROR: Class hash mismatch detected!${NC}"
-    log "${YELLOW}  The contract was previously declared by a different account.${NC}"
-    log "${YELLOW}  Existing class hash on-chain: $EXISTING_HASH${NC}"
-    log "${YELLOW}  To redeploy, you need to:${NC}"
-    log "${YELLOW}    1. Use the account that originally declared the contract, OR${NC}"
-    log "${YELLOW}    2. Deploy a new instance using the existing class hash${NC}"
-    log "${YELLOW}  Using existing class hash from CONTRACT_ADDRESS.md for deployment...${NC}"
-    
-    # Try to use existing class hash from CONTRACT_ADDRESS.md
-    if [ "$PROFILE" = "sepolia" ] && [ -f "$PROJECT_DIR/CONTRACT_ADDRESS.md" ]; then
-        EXISTING_ZYLITH_HASH=$(grep -A 1 "Class Hash:" "$PROJECT_DIR/CONTRACT_ADDRESS.md" | grep -o "0x[a-fA-F0-9]\+" | head -1)
-        if [ -n "$EXISTING_ZYLITH_HASH" ]; then
-            ZYLITH_HASH="$EXISTING_ZYLITH_HASH"
-            log "${GREEN}  Using existing class hash: $ZYLITH_HASH${NC}"
-        else
-            ZYLITH_HASH="$EXISTING_HASH"
-            log "${YELLOW}  Using class hash from error: $ZYLITH_HASH${NC}"
-        fi
-    else
-        ZYLITH_HASH="$EXISTING_HASH"
-        log "${YELLOW}  Using class hash from error: $ZYLITH_HASH${NC}"
-    fi
-else
-    ZYLITH_HASH=$(extract_class_hash "$ZYLITH_DECLARE")
-    if [ -z "$ZYLITH_HASH" ]; then
-        log "${YELLOW}  Zylith may already be declared or failed${NC}"
-        # Try to use existing class hash from CONTRACT_ADDRESS.md
-        if [ "$PROFILE" = "sepolia" ] && [ -f "$PROJECT_DIR/CONTRACT_ADDRESS.md" ]; then
-            EXISTING_ZYLITH_HASH=$(grep -A 1 "Class Hash:" "$PROJECT_DIR/CONTRACT_ADDRESS.md" | grep -o "0x[a-fA-F0-9]\+" | head -1)
-            if [ -n "$EXISTING_ZYLITH_HASH" ]; then
-                ZYLITH_HASH="$EXISTING_ZYLITH_HASH"
-                log "${GREEN}  Using existing class hash from CONTRACT_ADDRESS.md: $ZYLITH_HASH${NC}"
-            else
-                ZYLITH_HASH="0x0"
-            fi
-        else
-            ZYLITH_HASH="0x0"
-        fi
-    fi
+ZYLITH_HASH=$(extract_class_hash "$ZYLITH_DECLARE")
+if [ -z "$ZYLITH_HASH" ]; then
+    log "${YELLOW}  Zylith may already be declared or failed${NC}"
+    ZYLITH_HASH="0x0"
 fi
 log "  Zylith class_hash: $ZYLITH_HASH"
 

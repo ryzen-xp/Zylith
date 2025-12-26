@@ -179,9 +179,18 @@ pub mod Zylith {
             new_commitment: felt252,
         ) -> (i128, i128) {
             // Step 1 - Verify ZK proof using Garaga verifier
+            // Garaga verifier expects full_proof_with_hints = [proof (8 elements) + public_inputs (9 elements)]
+            let mut full_proof_with_hints = proof;
+            let mut i = 0;
+            let public_inputs_len = public_inputs.len();
+            while i < public_inputs_len {
+                full_proof_with_hints.append(*public_inputs.at(i));
+                i += 1;
+            }
+            
             let swap_verifier_addr = self.swap_verifier.read();
             let verifier = ISwapVerifier { contract_address: swap_verifier_addr };
-            let result = verifier.verify_groth16_proof_bn254(proof.span());
+            let result = verifier.verify_groth16_proof_bn254(full_proof_with_hints.span());
 
             let _verified_inputs = match result {
                 Result::Ok(v) => v,
