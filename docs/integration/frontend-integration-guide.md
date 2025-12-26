@@ -44,9 +44,10 @@ Zylith's private pool system consists of four main components that work together
 
 ### 1. Zylith Cairo Contract
 
-**Address (Sepolia)**: `0x04b6a594dc9747caf1bd3d8933621366bbb7fbaefa1522174432611b577ae94d`
+**Address (Sepolia)**: `0x002c6ced7ef107e71fb10b6b04b301d52116ab1803b19a0b88b35874d207db1d`
 
 **Key Functions**:
+
 - `initialize()` - Initialize a new pool
 - `private_deposit()` - Deposit tokens privately
 - `private_swap()` - Execute private swap with ZK proof
@@ -59,6 +60,7 @@ Zylith's private pool system consists of four main components that work together
 **Default Port**: `3000`
 
 **Endpoints**:
+
 - `GET /deposit/proof/:index` - Get Merkle proof for commitment
 - `GET /deposit/root` - Get current Merkle root
 - `GET /deposit/info` - Get tree information
@@ -69,6 +71,7 @@ Zylith's private pool system consists of four main components that work together
 **Location**: `../circuits/`
 
 **Available Circuits**:
+
 - `membership.circom` - Merkle membership proof
 - `swap.circom` - Private swap proof
 - `withdraw.circom` - Private withdrawal proof
@@ -124,6 +127,7 @@ GET /deposit/proof/:index
 ```
 
 **Response**:
+
 ```json
 {
   "leaf": "0x1234...",
@@ -140,6 +144,7 @@ GET /deposit/root
 ```
 
 **Response**:
+
 ```json
 "0x5678..."
 ```
@@ -151,6 +156,7 @@ GET /deposit/info
 ```
 
 **Response**:
+
 ```json
 {
   "root": "0x5678...",
@@ -169,9 +175,9 @@ const zylithContract = new Contract(ABI, CONTRACT_ADDRESS, provider);
 await zylithContract.initialize(
   token0Address,
   token1Address,
-  fee,           // e.g., 3000 (0.3%)
-  tickSpacing,   // e.g., 60
-  sqrtPriceX128  // Initial price in Q128.128 format
+  fee, // e.g., 3000 (0.3%)
+  tickSpacing, // e.g., 60
+  sqrtPriceX128 // Initial price in Q128.128 format
 );
 ```
 
@@ -185,19 +191,16 @@ const commitment = generateCommitment(secret, nullifier, amount);
 await tokenContract.approve(CONTRACT_ADDRESS, amount);
 
 // 3. Deposit
-await zylithContract.private_deposit(
-  tokenAddress,
-  amount,
-  commitment
-);
+await zylithContract.private_deposit(tokenAddress, amount, commitment);
 ```
 
 #### Private Swap
 
 ```typescript
 // 1. Get Merkle proof from ASP
-const proof = await fetch(`http://asp-server:3000/deposit/proof/${leafIndex}`)
-  .then(r => r.json());
+const proof = await fetch(
+  `http://asp-server:3000/deposit/proof/${leafIndex}`
+).then((r) => r.json());
 
 // 2. Generate ZK proof using Circom
 const zkProof = await generateSwapProof({
@@ -236,20 +239,23 @@ await zylithContract.private_swap(
 // config.ts
 export const CONFIG = {
   // Contract addresses
-  ZYLITH_CONTRACT: '0x04b6a594dc9747caf1bd3d8933621366bbb7fbaefa1522174432611b577ae94d',
-  
+  ZYLITH_CONTRACT:
+    "0x002c6ced7ef107e71fb10b6b04b301d52116ab1803b19a0b88b35874d207db1d",
+
   // ASP Server
-  ASP_SERVER_URL: process.env.REACT_APP_ASP_URL || 'http://localhost:3000',
-  
+  ASP_SERVER_URL: process.env.REACT_APP_ASP_URL || "http://localhost:3000",
+
   // RPC
-  STARKNET_RPC: process.env.REACT_APP_RPC_URL || 'https://api.cartridge.gg/x/starknet/sepolia',
-  
+  STARKNET_RPC:
+    process.env.REACT_APP_RPC_URL ||
+    "https://api.cartridge.gg/x/starknet/sepolia",
+
   // Circuit paths (for Node.js backend)
-  CIRCUITS_PATH: '../circuits',
+  CIRCUITS_PATH: "../circuits",
 };
 
 // Initialize Starknet provider
-import { Provider, Contract, Account } from 'starknet';
+import { Provider, Contract, Account } from "starknet";
 
 const provider = new Provider({ rpc: { nodeUrl: CONFIG.STARKNET_RPC } });
 const account = new Account(provider, accountAddress, privateKey);
@@ -259,7 +265,7 @@ const account = new Account(provider, accountAddress, privateKey);
 
 ```typescript
 // commitment.ts
-import { poseidonHashMany } from 'micro-starknet';
+import { poseidonHashMany } from "micro-starknet";
 
 /**
  * Generate a commitment: Poseidon(Poseidon(secret, nullifier), amount)
@@ -271,10 +277,10 @@ export function generateCommitment(
 ): bigint {
   // First hash: Poseidon(secret, nullifier)
   const intermediate = poseidonHashMany([secret, nullifier]);
-  
+
   // Second hash: Poseidon(intermediate, amount)
   const commitment = poseidonHashMany([intermediate, amount]);
-  
+
   return commitment;
 }
 
@@ -282,12 +288,20 @@ export function generateCommitment(
  * Generate random secret and nullifier
  */
 export function generateNote(): { secret: bigint; nullifier: bigint } {
-  const secret = BigInt('0x' + crypto.getRandomValues(new Uint8Array(32))
-    .reduce((s, b) => s + b.toString(16).padStart(2, '0'), ''));
-  
-  const nullifier = BigInt('0x' + crypto.getRandomValues(new Uint8Array(32))
-    .reduce((s, b) => s + b.toString(16).padStart(2, '0'), ''));
-  
+  const secret = BigInt(
+    "0x" +
+      crypto
+        .getRandomValues(new Uint8Array(32))
+        .reduce((s, b) => s + b.toString(16).padStart(2, "0"), "")
+  );
+
+  const nullifier = BigInt(
+    "0x" +
+      crypto
+        .getRandomValues(new Uint8Array(32))
+        .reduce((s, b) => s + b.toString(16).padStart(2, "0"), "")
+  );
+
   return { secret, nullifier };
 }
 ```
@@ -338,10 +352,10 @@ interface TreeInfo {
 // proofService.ts
 // This should run in a Node.js backend, not in the browser
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import * as fs from 'fs';
-import * as path from 'path';
+import { exec } from "child_process";
+import { promisify } from "util";
+import * as fs from "fs";
+import * as path from "path";
 
 const execAsync = promisify(exec);
 
@@ -353,42 +367,39 @@ export class ProofService {
    */
   async generateSwapProof(inputs: SwapProofInputs): Promise<SwapProof> {
     // 1. Create input file
-    const inputFile = path.join(this.circuitsPath, 'swap_input.json');
-    await fs.promises.writeFile(
-      inputFile,
-      JSON.stringify(inputs, null, 2)
-    );
+    const inputFile = path.join(this.circuitsPath, "swap_input.json");
+    await fs.promises.writeFile(inputFile, JSON.stringify(inputs, null, 2));
 
     // 2. Generate witness
     await execAsync(
       `node ${this.circuitsPath}/out/swap_js/generate_witness.js ` +
-      `${this.circuitsPath}/out/swap_js/swap.wasm ` +
-      `${inputFile} ${this.circuitsPath}/swap_witness.wtns`,
+        `${this.circuitsPath}/out/swap_js/swap.wasm ` +
+        `${inputFile} ${this.circuitsPath}/swap_witness.wtns`,
       { cwd: this.circuitsPath }
     );
 
     // 3. Generate proof
     await execAsync(
       `snarkjs groth16 prove ` +
-      `${this.circuitsPath}/out/swap_final.zkey ` +
-      `${this.circuitsPath}/swap_witness.wtns ` +
-      `${this.circuitsPath}/swap_proof.json ` +
-      `${this.circuitsPath}/swap_public.json`,
+        `${this.circuitsPath}/out/swap_final.zkey ` +
+        `${this.circuitsPath}/swap_witness.wtns ` +
+        `${this.circuitsPath}/swap_proof.json ` +
+        `${this.circuitsPath}/swap_public.json`,
       { cwd: this.circuitsPath }
     );
 
     // 4. Read proof
     const proof = JSON.parse(
       await fs.promises.readFile(
-        path.join(this.circuitsPath, 'swap_proof.json'),
-        'utf-8'
+        path.join(this.circuitsPath, "swap_proof.json"),
+        "utf-8"
       )
     );
 
     const publicInputs = JSON.parse(
       await fs.promises.readFile(
-        path.join(this.circuitsPath, 'swap_public.json'),
-        'utf-8'
+        path.join(this.circuitsPath, "swap_public.json"),
+        "utf-8"
       )
     );
 
@@ -441,9 +452,9 @@ interface SwapProof {
 
 ```typescript
 // swapService.ts
-import { Contract, Account } from 'starknet';
-import { ASPClient } from './aspClient';
-import { ProofService } from './proofService';
+import { Contract, Account } from "starknet";
+import { ASPClient } from "./aspClient";
+import { ProofService } from "./proofService";
 
 export class PrivateSwapService {
   constructor(
@@ -470,7 +481,7 @@ export class PrivateSwapService {
     // 2. Verify root matches on-chain
     const onChainRoot = await this.contract.get_merkle_root();
     if (onChainRoot.toString() !== merkleProof.root) {
-      throw new Error('Merkle root mismatch');
+      throw new Error("Merkle root mismatch");
     }
 
     // 3. Generate ZK proof (backend call)
@@ -510,9 +521,9 @@ export class PrivateSwapService {
 
 ```typescript
 // usePrivateSwap.ts
-import { useState } from 'react';
-import { useAccount, useContract } from './starknetHooks';
-import { PrivateSwapService } from './swapService';
+import { useState } from "react";
+import { useAccount, useContract } from "./starknetHooks";
+import { PrivateSwapService } from "./swapService";
 
 export function usePrivateSwap() {
   const { account } = useAccount();
@@ -580,7 +591,7 @@ if (historicalRoots.includes(merkleProof.root)) {
 // Solution: Generate new nullifier for each operation
 const isSpent = await contract.is_nullifier_spent(nullifier);
 if (isSpent) {
-  throw new Error('Note already spent');
+  throw new Error("Note already spent");
 }
 ```
 
@@ -595,7 +606,7 @@ async function getMerkleProofWithRetry(index: number, retries = 3) {
       return await aspClient.getMerkleProof(index);
     } catch (err) {
       if (i === retries - 1) throw err;
-      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
     }
   }
 }
@@ -667,7 +678,7 @@ async function privateDeposit(
 
   // 6. Get leaf index from event
   const receipt = await account.getTransactionReceipt(tx.transaction_hash);
-  const depositEvent = receipt.events.find(e => e.name === 'Deposit');
+  const depositEvent = receipt.events.find((e) => e.name === "Deposit");
   const leafIndex = depositEvent.data.leaf_index;
 
   // 7. Store note securely (encrypted)
@@ -679,7 +690,7 @@ async function privateDeposit(
     leafIndex,
     tokenAddress,
   };
-  
+
   await storeNoteSecurely(note);
 
   return { note, txHash: tx.transaction_hash };
@@ -709,4 +720,3 @@ async function privateDeposit(
 
 **Last Updated**: January 2025
 **Version**: 1.0
-
