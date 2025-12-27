@@ -63,7 +63,7 @@ async fn main() {
     let rpc_url = std::env::var("RPC_URL")
         .unwrap_or_else(|_| "https://api.cartridge.gg/x/starknet/sepolia".to_string());
     let contract_address = std::env::var("CONTRACT_ADDRESS").unwrap_or_else(|_| {
-        "0x0101fa7fb61c48f364757d6b8951ca975dfd707ab5768e4e7a32a64c3947ecd9".to_string()
+        "0x07fd7386f3b91ec5e130aafb85da7fe3cbfa069beb080789150c4b75efc5c9ef".to_string()
     });
 
     // Validate ABIs on startup
@@ -1130,7 +1130,7 @@ async fn prepare_initialize(
         "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7".to_string() // ETH
     });
     let token1 = payload.token1.unwrap_or_else(|| {
-        "0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8".to_string() // USDC
+        "0x0512feAc6339Ff7889822cb5aA2a86C848e9D392bB0E3E237C008674feeD8343".to_string() // USDC
     });
     let fee = payload.fee.unwrap_or(3000); // 0.3%
     let tick_spacing = payload.tick_spacing.unwrap_or(60);

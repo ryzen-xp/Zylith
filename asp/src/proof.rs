@@ -31,8 +31,8 @@ pub async fn generate_swap_proof(
     // Paths to circuit files
     let circuits_dir = Path::new(circuits_path).canonicalize()
         .map_err(|e| format!("Failed to canonicalize circuits path: {}", e))?;
-    let wasm_path = circuits_dir.join("out").join("swap_js").join("swap.wasm");
-    let zkey_path = circuits_dir.join("out").join("swap_final.zkey");
+    let wasm_path = circuits_dir.join("build").join("swap").join("swap_js").join("swap.wasm");
+    let zkey_path = circuits_dir.join("build").join("zkeys").join("swap.zkey");
     
     // Check for rapidsnark binary
     let asp_dir = Path::new(env!("CARGO_MANIFEST_DIR"));

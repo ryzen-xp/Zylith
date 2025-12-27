@@ -2,7 +2,7 @@ export const CONFIG = {
   // Contract addresses from Zylith deployment
   ZYLITH_CONTRACT:
     process.env.NEXT_PUBLIC_ZYLITH_CONTRACT ||
-    "0x0101fa7fb61c48f364757d6b8951ca975dfd707ab5768e4e7a32a64c3947ecd9",
+    "0x07fd7386f3b91ec5e130aafb85da7fe3cbfa069beb080789150c4b75efc5c9ef",
 
   // Verifier contracts
   VERIFIERS: {
@@ -46,9 +46,9 @@ export const TOKENS = [
   },
   {
     symbol: "USDC",
-    name: "USD Coin",
+    name: "USDC",
     address:
-      "0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8", // Sepolia USDC
+      "0x0512feAc6339Ff7889822cb5aA2a86C848e9D392bB0E3E237C008674feeD8343", // Sepolia USDC
     decimals: 6,
   },
 ];

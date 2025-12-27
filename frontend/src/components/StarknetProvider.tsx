@@ -12,12 +12,16 @@ import {
 } from "@starknet-react/core";
 import { RpcProvider } from "starknet";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { NotificationToast, useNotifications } from "@/components/shared/NotificationToast";
+import {
+  NotificationToast,
+  useNotifications,
+} from "@/components/shared/NotificationToast";
 import { setNotificationHandler } from "@/hooks/use-contract-events";
 import { CONFIG } from "@/lib/config";
 
 function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const { notification, showNotification, dismissNotification } = useNotifications();
+  const { notification, showNotification, dismissNotification } =
+    useNotifications();
 
   useEffect(() => {
     setNotificationHandler((type, title, message) => {
@@ -28,7 +32,10 @@ function NotificationProvider({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      <NotificationToast notification={notification} onDismiss={dismissNotification} />
+      <NotificationToast
+        notification={notification}
+        onDismiss={dismissNotification}
+      />
     </>
   );
 }
@@ -36,14 +43,11 @@ function NotificationProvider({ children }: { children: React.ReactNode }) {
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const { connectors } = useInjectedConnectors({
     // Show these connectors if the user has no connector installed.
-    recommended: [
-      argent(),
-      braavos(),
-    ],
+    recommended: [argent(), braavos()],
     // Hide recommended connectors if the user has any connector installed.
     includeRecommended: "onlyIfNoConnectors",
     // Randomize the order of the connectors.
-    order: "random"
+    order: "random",
   });
 
   const queryClient = new QueryClient();
@@ -52,10 +56,8 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
   // The proxy route (/api/rpc) forwards requests from server (no CORS)
   const provider = useMemo(() => {
     // Use proxy API route for RPC calls to avoid CORS
-    const proxyUrl = typeof window !== 'undefined' 
-      ? `${window.location.origin}/api/rpc`
-      : CONFIG.STARKNET_RPC;
-    
+    const proxyUrl = "https://starknet-sepolia-rpc.publicnode.com";
+
     const customProvider = new RpcProvider({ nodeUrl: proxyUrl });
     // Return a function that matches the provider interface expected by StarknetConfig
     return (chain: any) => customProvider;
@@ -70,11 +72,8 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
       queryClient={queryClient}
     >
       <QueryClientProvider client={queryClient}>
-        <NotificationProvider>
-          {children}
-        </NotificationProvider>
+        <NotificationProvider>{children}</NotificationProvider>
       </QueryClientProvider>
     </StarknetConfig>
   );
 }
-

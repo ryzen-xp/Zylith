@@ -4,27 +4,27 @@ import fs from "fs";
 
 /**
  * Proof Service for Zylith
- * 
+ *
  * Generates Groth16 proofs using snarkjs and formats them for Garaga verifier.
- * 
+ *
  * IMPORTANT: Garaga Verifier Format
  * ---------------------------------
  * Garaga expects proofs in a specific format called `full_proof_with_hints`:
- * 
+ *
  * Base format: [A.x, A.y, B.x0, B.x1, B.y0, B.y1, C.x, C.y, ...public_inputs]
- * 
+ *
  * Where:
  * - A: G1 point (pi_a from snarkjs)
  * - B: G2 point (pi_b from snarkjs, format [[x0,x1], [y0,y1]])
  * - C: G1 point (pi_c from snarkjs)
- * 
+ *
  * For on-chain verification, Garaga also requires precomputed hints:
  * - mpcheck_hint: Hints for multi-pairing check
  * - msm_hint: Hints for multi-scalar multiplication
- * 
+ *
  * These hints are generated using the Garaga CLI:
  *   garaga gen --vk verification_key.json --proof proof.json --output calldata.txt
- * 
+ *
  * Public inputs per circuit:
  * - membership: 2 [root, commitment]
  * - swap: 9 [nullifier, root, new_commitment, amount_specified, zero_for_one, amount0_delta, amount1_delta, new_sqrt_price_x128, new_tick]
@@ -57,49 +57,73 @@ export class ProofService {
   /**
    * Generate a Groth16 proof using snarkjs
    */
-  async generateProof(
-    circuitName: string,
-    inputs: any
-  ): Promise<ProofResult> {
+  async generateProof(circuitName: string, inputs: any): Promise<ProofResult> {
     // Circuit paths match the structure from generate_proof.js
     // Format: out/{circuit}_js/{circuit}.wasm and out/{circuit}_final.zkey
-    const wasmPath = path.join(this.circuitsPath, "out", `${circuitName}_js`, `${circuitName}.wasm`);
-    const zkeyPath = path.join(this.circuitsPath, "out", `${circuitName}_final.zkey`);
+    const wasmPath = path.join(
+      this.circuitsPath,
+      "build",
+      `${circuitName}`,
+      `${circuitName}_js`,
+      `${circuitName}.wasm`
+    );
+    const zkeyPath = path.join(
+      this.circuitsPath,
+      "build",
+      "zkey",
+      `${circuitName}.zkey`
+    );
 
     // Check if files exist
     if (!fs.existsSync(wasmPath)) {
-      throw new Error(`WASM file not found at ${wasmPath}. Did you compile the circuits?`);
+      throw new Error(
+        `WASM file not found at ${wasmPath}. Did you compile the circuits?`
+      );
     }
     if (!fs.existsSync(zkeyPath)) {
-      throw new Error(`ZKey file not found at ${zkeyPath}. Did you compile the circuits?`);
+      throw new Error(
+        `ZKey file not found at ${zkeyPath}. Did you compile the circuits?`
+      );
     }
 
     try {
-      console.log(`[ProofService] Starting proof generation for ${circuitName}...`);
+      console.log(
+        `[ProofService] Starting proof generation for ${circuitName}...`
+      );
       console.log(`[ProofService] WASM: ${wasmPath}`);
       console.log(`[ProofService] ZKey: ${zkeyPath}`);
-      console.log(`[ProofService] Input keys: ${Object.keys(inputs).join(', ')}`);
-      
+      console.log(
+        `[ProofService] Input keys: ${Object.keys(inputs).join(", ")}`
+      );
+
       const startTime = Date.now();
-      
+
       // Log progress for large circuits
       if (circuitName === "swap" || circuitName === "lp") {
-        console.log(`[ProofService] ⏳ Large circuit detected. This may take 2-5 minutes...`);
-        console.log(`[ProofService] Starting witness generation and proof computation...`);
+        console.log(
+          `[ProofService] ⏳ Large circuit detected. This may take 2-5 minutes...`
+        );
+        console.log(
+          `[ProofService] Starting witness generation and proof computation...`
+        );
       }
-      
+
       const { proof, publicSignals } = await snarkjs.groth16.fullProve(
         inputs,
         wasmPath,
         zkeyPath
       );
-      
+
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-      console.log(`[ProofService] ✅ Proof generated successfully in ${elapsed}s`);
-      console.log(`[ProofService] Public signals count: ${publicSignals.length}`);
+      console.log(
+        `[ProofService] ✅ Proof generated successfully in ${elapsed}s`
+      );
+      console.log(
+        `[ProofService] Public signals count: ${publicSignals.length}`
+      );
 
       const formatted = this.formatProofForGaraga(proof, publicSignals);
-      
+
       // Validate the formatted proof
       // Note: expectedPublicInputsCount should be passed as parameter or determined by circuit
       // For now, we validate structure but not exact count (circuit-specific)
@@ -117,7 +141,11 @@ export class ProofService {
       return formatted;
     } catch (error) {
       console.error("Proof generation failed:", error);
-      throw new Error(`Proof generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Proof generation failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
@@ -145,8 +173,10 @@ export class ProofService {
       errors.push("Proof must have at least 8 elements (proof points)");
     } else {
       // Verify all proof points are valid field elements
-      const FIELD_PRIME = BigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617");
-      
+      const FIELD_PRIME = BigInt(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617"
+      );
+
       for (let i = 0; i < 8; i++) {
         try {
           const val = BigInt(proof[i]);
@@ -178,7 +208,11 @@ export class ProofService {
     }
 
     // Check that public inputs in proof match provided public inputs
-    for (let i = 0; i < Math.min(publicInputs.length, actualPublicInputsCount); i++) {
+    for (
+      let i = 0;
+      i < Math.min(publicInputs.length, actualPublicInputsCount);
+      i++
+    ) {
       const proofIndex = 8 + i;
       if (proof[proofIndex] !== publicInputs[i]) {
         errors.push(
@@ -196,7 +230,7 @@ export class ProofService {
   /**
    * Format proof for Garaga verifier (Cairo)
    * Garaga expects: [A.x, A.y, B.x0, B.x1, B.y0, B.y1, C.x, C.y, ...public_inputs]
-   * 
+   *
    * Format matches generate_proof.js exportForCairo function:
    * - A: [pi_a[0], pi_a[1]]
    * - B: [pi_b[0][0], pi_b[0][1], pi_b[1][0], pi_b[1][1]]
@@ -206,42 +240,46 @@ export class ProofService {
   private formatProofForGaraga(proof: any, publicInputs: any[]): ProofResult {
     // A points (G1)
     const A = [proof.pi_a[0], proof.pi_a[1]];
-    
+
     // B points (G2) - snarkjs returns as [[x0, x1], [y0, y1]]
     // Garaga expects: [x0, x1, y0, y1]
     const B_x = proof.pi_b[0]; // [x0, x1] - first element is x coordinates
     const B_y = proof.pi_b[1]; // [y0, y1] - second element is y coordinates
-    
+
     // C points (G1)
     const C = [proof.pi_c[0], proof.pi_c[1]];
 
     // Format: [A.x, A.y, B.x0, B.x1, B.y0, B.y1, C.x, C.y, ...public_inputs]
     const full_proof_with_hints = [
-      A[0], A[1],                    // A.x, A.y
-      B_x[0], B_x[1], B_y[0], B_y[1], // B.x0, B.x1, B.y0, B.y1
-      C[0], C[1],                     // C.x, C.y
-      ...publicInputs                  // Public inputs follow proof points
+      A[0],
+      A[1], // A.x, A.y
+      B_x[0],
+      B_x[1],
+      B_y[0],
+      B_y[1], // B.x0, B.x1, B.y0, B.y1
+      C[0],
+      C[1], // C.x, C.y
+      ...publicInputs, // Public inputs follow proof points
     ];
 
     // Convert all values to strings (felt252 format)
     // Garaga expects decimal strings for felt252 values
     return {
-      full_proof_with_hints: full_proof_with_hints.map(v => {
+      full_proof_with_hints: full_proof_with_hints.map((v) => {
         // Convert BigInt to decimal string, regular numbers to string
-        if (typeof v === 'bigint') {
+        if (typeof v === "bigint") {
           return v.toString();
         }
         return String(v);
       }),
-      public_inputs: publicInputs.map(v => {
-        if (typeof v === 'bigint') {
+      public_inputs: publicInputs.map((v) => {
+        if (typeof v === "bigint") {
           return v.toString();
         }
         return String(v);
-      })
+      }),
     };
   }
 }
 
 export const proofService = new ProofService();
-
