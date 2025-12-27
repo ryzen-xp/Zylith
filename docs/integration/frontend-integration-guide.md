@@ -44,7 +44,7 @@ Zylith's private pool system consists of four main components that work together
 
 ### 1. Zylith Cairo Contract
 
-**Address (Sepolia)**: `0x0101fa7fb61c48f364757d6b8951ca975dfd707ab5768e4e7a32a64c3947ecd9`
+**Address (Sepolia)**: `0x07fd7386f3b91ec5e130aafb85da7fe3cbfa069beb080789150c4b75efc5c9ef`
 
 **Key Functions**:
 
@@ -240,7 +240,7 @@ await zylithContract.private_swap(
 export const CONFIG = {
   // Contract addresses
   ZYLITH_CONTRACT:
-    "0x0101fa7fb61c48f364757d6b8951ca975dfd707ab5768e4e7a32a64c3947ecd9",
+    "0x07fd7386f3b91ec5e130aafb85da7fe3cbfa069beb080789150c4b75efc5c9ef",
 
   // ASP Server
   ASP_SERVER_URL: process.env.REACT_APP_ASP_URL || "http://localhost:3000",

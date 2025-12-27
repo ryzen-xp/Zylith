@@ -18,7 +18,7 @@ cd asp
 
 # Configurar variables de entorno
 export RPC_URL="https://api.cartridge.gg/x/starknet/sepolia"
-export CONTRACT_ADDRESS="0x0101fa7fb61c48f364757d6b8951ca975dfd707ab5768e4e7a32a64c3947ecd9"
+export CONTRACT_ADDRESS="0x07fd7386f3b91ec5e130aafb85da7fe3cbfa069beb080789150c4b75efc5c9ef"
 export PORT="3000"
 
 # Compilar (primera vez)
@@ -42,7 +42,7 @@ cargo run --release
 
 ```bash
 export RPC_URL="https://api.cartridge.gg/x/starknet/sepolia"
-export CONTRACT_ADDRESS="0x0101fa7fb61c48f364757d6b8951ca975dfd707ab5768e4e7a32a64c3947ecd9"
+export CONTRACT_ADDRESS="0x07fd7386f3b91ec5e130aafb85da7fe3cbfa069beb080789150c4b75efc5c9ef"
 export PORT="3000"
 ```
 
