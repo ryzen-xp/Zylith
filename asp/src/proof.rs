@@ -36,7 +36,7 @@ pub async fn generate_swap_proof(
     
     // Check for rapidsnark binary
     let asp_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let rapidsnark_path = asp_dir.join("bin").join("rapidsnark");
+    let rapidsnark_path = asp_dir.join("bin").join("prover");
     let use_rapidsnark = rapidsnark_path.exists();
     
     if !wasm_path.exists() {

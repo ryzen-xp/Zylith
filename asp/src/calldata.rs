@@ -85,7 +85,8 @@ pub fn build_swap_calldata(
     
     // new_commitment: felt252
     calldata.push(parse_felt(new_commitment)?);
-    
+
+    println!("This is the calldata for swap {:?} :" , calldata);
     Ok(calldata)
 }
 
