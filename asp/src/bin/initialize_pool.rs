@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rpc_url = std::env::var("STARKNET_RPC")
         .unwrap_or_else(|_| "https://starknet-sepolia-rpc.publicnode.com".to_string());
     let zylith_address = std::env::var("ZYLITH_CONTRACT")
-        .unwrap_or_else(|_| "0x00cf52fa0d4f080faac7e780ae5b7298047c1626db180ad7bd628fa87860dfba".to_string());
+        .unwrap_or_else(|_| "0x04be88b8ded4bcb9bef0d7afce05c8eff7df67714a2e6a9371ed1151948a3dc3".to_string());
     
     // Get private key from environment or use default for testing
     let private_key_hex = std::env::var("PRIVATE_KEY")

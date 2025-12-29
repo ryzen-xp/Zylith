@@ -161,12 +161,12 @@
             "type": "core::array::Array::<core::felt252>"
           },
           {
-            "name": "tick_lower",
-            "type": "core::integer::i32"
+            "name": "tick_lower_felt",
+            "type": "core::felt252"
           },
           {
-            "name": "tick_upper",
-            "type": "core::integer::i32"
+            "name": "tick_upper_felt",
+            "type": "core::felt252"
           },
           {
             "name": "liquidity",
@@ -197,12 +197,12 @@
             "type": "core::array::Array::<core::felt252>"
           },
           {
-            "name": "tick_lower",
-            "type": "core::integer::i32"
+            "name": "tick_lower_felt",
+            "type": "core::felt252"
           },
           {
-            "name": "tick_upper",
-            "type": "core::integer::i32"
+            "name": "tick_upper_felt",
+            "type": "core::felt252"
           },
           {
             "name": "liquidity",
@@ -233,12 +233,12 @@
             "type": "core::array::Array::<core::felt252>"
           },
           {
-            "name": "tick_lower",
-            "type": "core::integer::i32"
+            "name": "tick_lower_felt",
+            "type": "core::felt252"
           },
           {
-            "name": "tick_upper",
-            "type": "core::integer::i32"
+            "name": "tick_upper_felt",
+            "type": "core::felt252"
           },
           {
             "name": "new_commitment",
