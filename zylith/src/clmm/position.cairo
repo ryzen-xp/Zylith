@@ -1,12 +1,13 @@
 // Position Management - Track and manage LP positions
 
-use starknet::ContractAddress;
 use starknet::storage::*;
 
 #[starknet::storage_node]
 pub struct PositionStorage {
     // Mapping: (owner, tick_lower, tick_upper) -> PositionInfo
-    pub positions: Map<(ContractAddress, i32, i32), PositionInfo>,
+    // For private positions, owner is position_commitment (felt252)
+    // For public positions, owner is ContractAddress from get_caller_address()
+    pub positions: Map<(felt252, i32, i32), PositionInfo>,
 }
 
 #[derive(Drop, Serde, starknet::Store)]

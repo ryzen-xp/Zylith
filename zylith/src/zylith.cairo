@@ -222,10 +222,66 @@ pub mod Zylith {
             assert(_verified_inputs.len() >= 9, 'INVALID_VERIFIED_INPUTS_LEN');
             assert(_verified_inputs.len() == public_inputs.len(), ' PUBLIC_INPUT_MISMATCH ');
 
-            let verified_nullifier: felt252 = (*_verified_inputs.at(0)).try_into().unwrap();
-            let verified_root: felt252 = (*_verified_inputs.at(1)).try_into().unwrap();
-            let verified_new_commitment: felt252 = (*_verified_inputs.at(2)).try_into().unwrap();
+            // Extract felt252 values from u256
+            // The verifier returns u256, but these were originally felt252 values
+            // When a felt252 >= 2^128 is converted to u256, it will have high != 0
+            // We need to reconstruct the full value: high * 2^128 + low
+            // However, since felt252 values are always < 2^252, we can safely use u256.try_into()
+            // when high != 0, or just .low when high == 0
+            let verified_nullifier_u256 = *_verified_inputs.at(0);
+            let verified_nullifier: felt252 = if verified_nullifier_u256.high == 0 {
+                match verified_nullifier_u256.low.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("NULLIFIER_CONVERSION_FAILED"),
+                }
+            } else {
+                // Reconstruct: high * 2^128 + low
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_nullifier_u256.high.into();
+                let low_u256: u256 = verified_nullifier_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                match reconstructed.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("NULLIFIER_CONVERSION_FAILED"),
+                }
+            };
+            let verified_root_u256 = *_verified_inputs.at(1);
+            let verified_root: felt252 = if verified_root_u256.high == 0 {
+                match verified_root_u256.low.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("ROOT_CONVERSION_FAILED"),
+                }
+            } else {
+                // Reconstruct: high * 2^128 + low
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_root_u256.high.into();
+                let low_u256: u256 = verified_root_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                match reconstructed.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("ROOT_CONVERSION_FAILED"),
+                }
+            };
+            let verified_new_commitment_u256 = *_verified_inputs.at(2);
+            let verified_new_commitment: felt252 = if verified_new_commitment_u256.high == 0 {
+                match verified_new_commitment_u256.low.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("COMMITMENT_CONVERSION_FAILED"),
+                }
+            } else {
+                // Reconstruct: high * 2^128 + low
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_new_commitment_u256.high.into();
+                let low_u256: u256 = verified_new_commitment_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                match reconstructed.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("COMMITMENT_CONVERSION_FAILED"),
+                }
+            };
             let verified_amount: u128 = (*_verified_inputs.at(3)).low;
+            // Index 4: zero_for_one (0 for false, 1 for true) - must match function parameter
+            let verified_zero_for_one: bool = (*_verified_inputs.at(4)).low != 0;
             // Indices 5-8: expected swap transition outputs (will be verified after execution)
             // Convert u256 to i128 safely (handles two's complement for negative values)
             // Negative i128 values are sent as u256: 2^128 - |value|
@@ -237,10 +293,16 @@ pub mod Zylith {
                 let two_to_128: u256 = 340282366920938463463374607431768211456; // 2^128
                 let value_u256: u256 = amount0_delta_u256.low.into();
                 let complement: u256 = two_to_128 - value_u256; // 2^128 - value
-                let neg_val: i128 = complement.low.try_into().unwrap();
+                let neg_val: i128 = match complement.low.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("AMOUNT0_NEG_CONVERSION_FAILED"),
+                };
                 -neg_val
             } else {
-                amount0_delta_u256.low.try_into().unwrap()
+                match amount0_delta_u256.low.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("AMOUNT0_CONVERSION_FAILED"),
+                }
             };
 
             let amount1_delta_u256 = *_verified_inputs.at(6);
@@ -250,10 +312,16 @@ pub mod Zylith {
                 let two_to_128: u256 = 340282366920938463463374607431768211456; // 2^128
                 let value_u256: u256 = amount1_delta_u256.low.into();
                 let complement: u256 = two_to_128 - value_u256; // 2^128 - value
-                let neg_val: i128 = complement.low.try_into().unwrap();
+                let neg_val: i128 = match complement.low.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("AMOUNT1_NEG_CONVERSION_FAILED"),
+                };
                 -neg_val
             } else {
-                amount1_delta_u256.low.try_into().unwrap()
+                match amount1_delta_u256.low.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("AMOUNT1_CONVERSION_FAILED"),
+                }
             };
 
             let expected_new_sqrt_price: u256 = *_verified_inputs.at(7);
@@ -266,10 +334,16 @@ pub mod Zylith {
                 let two_to_32: u256 = 4294967296; // 2^32
                 let value_u256: u256 = new_tick_u256.low.into();
                 let complement: u256 = two_to_32 - value_u256; // 2^32 - value
-                let neg_val: i32 = complement.low.try_into().unwrap();
+                let neg_val: i32 = match complement.low.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("TICK_NEG_CONVERSION_FAILED"),
+                };
                 -neg_val
             } else {
-                new_tick_u256.low.try_into().unwrap()
+                match new_tick_u256.low.try_into() {
+                    Option::Some(v) => v,
+                    Option::None => panic!("TICK_CONVERSION_FAILED"),
+                }
             };
 
             // CRITICAL: Verify root is known (current OR historical)
@@ -280,10 +354,16 @@ pub mod Zylith {
             // CRITICAL: Ensure proof matches call arguments
             assert(verified_amount == amount_specified, 'AMOUNT_MISMATCH');
             assert(verified_new_commitment == new_commitment, 'COMMITMENT_MISMATCH');
+            assert(verified_zero_for_one == zero_for_one, 'ZERO_FOR_ONE_MISMATCH');
 
             // CRITICAL: Check nullifier hasn't been spent (prevents double-spend)
             let is_spent = self.nullifiers.spent_nullifiers.entry(verified_nullifier).read();
             assert(!is_spent, 'NULLIFIER_ALREADY_SPENT');
+
+            // CRITICAL: Check if pool has liquidity before executing swap
+            // If there's no liquidity, the swap cannot execute and proof verification will fail
+            let pool_liquidity = self.pool.liquidity.read();
+            assert(pool_liquidity > 0, 'NO_LIQUIDITY');
 
             // Step 3 - Mark nullifier as spent BEFORE executing swap (CEI pattern)
             self.nullifiers.spent_nullifiers.entry(verified_nullifier).write(true);
@@ -370,10 +450,41 @@ pub mod Zylith {
             // 4: fee
             assert(_verified_inputs.len() >= 4, 'INVALID_VERIFIED_INPUTS_LEN');
 
-            let verified_nullifier: felt252 = (*_verified_inputs.at(0)).try_into().unwrap();
-            let verified_root: felt252 = (*_verified_inputs.at(1)).try_into().unwrap();
+            // Extract felt252 values from u256
+            // The verifier returns u256, but felt252 values can be >= 2^128
+            // If high == 0, use .low; otherwise use the full u256
+            // Extract felt252 values from u256 - reconstruct full value when high != 0
+            let verified_nullifier_u256 = *_verified_inputs.at(0);
+            let verified_nullifier: felt252 = if verified_nullifier_u256.high == 0 {
+                verified_nullifier_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_nullifier_u256.high.into();
+                let low_u256: u256 = verified_nullifier_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
+            let verified_root_u256 = *_verified_inputs.at(1);
+            let verified_root: felt252 = if verified_root_u256.high == 0 {
+                verified_root_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_root_u256.high.into();
+                let low_u256: u256 = verified_root_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
             let verified_amount: u128 = (*_verified_inputs.at(3)).low;
-            let verified_recipient_felt: felt252 = (*_verified_inputs.at(2)).try_into().unwrap();
+            let verified_recipient_felt_u256 = *_verified_inputs.at(2);
+            let verified_recipient_felt: felt252 = if verified_recipient_felt_u256.high == 0 {
+                verified_recipient_felt_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_recipient_felt_u256.high.into();
+                let low_u256: u256 = verified_recipient_felt_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
             let verified_recipient: ContractAddress = verified_recipient_felt.try_into().unwrap();
 
             // CRITICAL: Check root is known (current OR historical)
@@ -415,18 +526,26 @@ pub mod Zylith {
                 );
         }
 
+        /// Helper function to convert felt252 to i32
+        /// Handles negative values using Cairo prime field arithmetic
+        /// Negative i32 values are represented as: PRIME - abs(value)
         /// Private mint - add liquidity with ZK proof verification
         /// The proof verifies ownership of a commitment with sufficient balance
         /// Tick ranges remain public in MVP (bounds privacy deferred)
+        /// NOTE: tick_lower and tick_upper are felt252 in the interface (for Starknet.js compatibility)
+        /// but converted to i32 internally for CLMM logic
         fn private_mint_liquidity(
             ref self: ContractState,
             proof: Array<felt252>,
             public_inputs: Array<felt252>,
-            tick_lower: i32,
-            tick_upper: i32,
+            tick_lower_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_upper_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
             liquidity: u128,
             new_commitment: felt252,
         ) -> (u128, u128) {
+            // Convert felt252 to i32 for internal CLMM logic
+            let tick_lower: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_lower_felt);
+            let tick_upper: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_upper_felt);
             // Step 1 - Verify ZK proof using Garaga LP verifier
             // Garaga verifier expects full_proof_with_hints = [proof (8 elements) + public_inputs]
             let mut full_proof_with_hints = proof;
@@ -467,8 +586,30 @@ pub mod Zylith {
             // 6: position_commitment (unique identifier for this LP position)
             assert(_verified_inputs.len() >= 7, 'INVALID_VERIFIED_INPUTS_LEN');
 
-            let verified_nullifier: felt252 = (*_verified_inputs.at(0)).try_into().unwrap();
-            let verified_root: felt252 = (*_verified_inputs.at(1)).try_into().unwrap();
+            // Extract felt252 values from u256
+            // The verifier returns u256, but felt252 values can be >= 2^128
+            // If high == 0, use .low; otherwise use the full u256
+            // Extract felt252 values from u256 - reconstruct full value when high != 0
+            let verified_nullifier_u256 = *_verified_inputs.at(0);
+            let verified_nullifier: felt252 = if verified_nullifier_u256.high == 0 {
+                verified_nullifier_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_nullifier_u256.high.into();
+                let low_u256: u256 = verified_nullifier_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
+            let verified_root_u256 = *_verified_inputs.at(1);
+            let verified_root: felt252 = if verified_root_u256.high == 0 {
+                verified_root_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_root_u256.high.into();
+                let low_u256: u256 = verified_root_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
             // Convert u256 to i32 safely (handles two's complement for negative values)
             let tick_lower_u256 = *_verified_inputs.at(2);
             let verified_tick_lower: i32 = if tick_lower_u256.low >= 2147483648 { // 2^31
@@ -491,8 +632,26 @@ pub mod Zylith {
                 tick_upper_u256.low.try_into().unwrap()
             };
             let verified_liquidity: u128 = (*_verified_inputs.at(4)).low;
-            let verified_new_commitment: felt252 = (*_verified_inputs.at(5)).try_into().unwrap();
-            let position_commitment: felt252 = (*_verified_inputs.at(6)).try_into().unwrap();
+            let verified_new_commitment_u256 = *_verified_inputs.at(5);
+            let verified_new_commitment: felt252 = if verified_new_commitment_u256.high == 0 {
+                verified_new_commitment_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_new_commitment_u256.high.into();
+                let low_u256: u256 = verified_new_commitment_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
+            let position_commitment_u256 = *_verified_inputs.at(6);
+            let position_commitment: felt252 = if position_commitment_u256.high == 0 {
+                position_commitment_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = position_commitment_u256.high.into();
+                let low_u256: u256 = position_commitment_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
 
             // Step 3 - Validate verified values match call parameters
             // CRITICAL: Check root is known (current OR historical)
@@ -519,10 +678,11 @@ pub mod Zylith {
             assert!(tick_upper % tick::TICK_SPACING == 0);
             assert!(liquidity > 0);
 
-            // Derive position owner from position_commitment
+            // Use position_commitment directly as the position key
             // This ensures each private position has a unique key based on its commitment
             // The same user can have multiple positions with different position_commitments
-            let position_owner: ContractAddress = position_commitment.try_into().unwrap();
+            // Note: position_commitment is a felt252, not a ContractAddress
+            let position_key = (position_commitment, tick_lower, tick_upper);
             let current_tick = self.pool.tick.read();
             let current_sqrt_price = self.pool.sqrt_price_x128.read();
 
@@ -559,8 +719,8 @@ pub mod Zylith {
             );
 
             // Update position
-            let position_key = (position_owner, tick_lower, tick_upper);
-            let position_info = self.positions.positions.entry(position_key).read();
+            // position_key was already set above using position_commitment
+            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
 
             let updated_position = zylith::clmm::position::PositionInfo {
                 liquidity: position_info.liquidity + liquidity,
@@ -595,11 +755,14 @@ pub mod Zylith {
             ref self: ContractState,
             proof: Array<felt252>,
             public_inputs: Array<felt252>,
-            tick_lower: i32,
-            tick_upper: i32,
+            tick_lower_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_upper_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
             liquidity: u128,
             new_commitment: felt252,
         ) -> (u128, u128) {
+            // Convert felt252 to i32 for internal CLMM logic
+            let tick_lower: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_lower_felt);
+            let tick_upper: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_upper_felt);
             // Step 1 - Verify ZK proof using Garaga LP verifier
             // Garaga verifier expects full_proof_with_hints = [proof (8 elements) + public_inputs]
             let mut full_proof_with_hints = proof;
@@ -640,8 +803,30 @@ pub mod Zylith {
             // 6: position_commitment (unique identifier for the LP position being burned)
             assert(_verified_inputs.len() >= 7, 'INVALID_VERIFIED_INPUTS_LEN');
 
-            let verified_nullifier: felt252 = (*_verified_inputs.at(0)).try_into().unwrap();
-            let verified_root: felt252 = (*_verified_inputs.at(1)).try_into().unwrap();
+            // Extract felt252 values from u256
+            // The verifier returns u256, but felt252 values can be >= 2^128
+            // If high == 0, use .low; otherwise use the full u256
+            // Extract felt252 values from u256 - reconstruct full value when high != 0
+            let verified_nullifier_u256 = *_verified_inputs.at(0);
+            let verified_nullifier: felt252 = if verified_nullifier_u256.high == 0 {
+                verified_nullifier_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_nullifier_u256.high.into();
+                let low_u256: u256 = verified_nullifier_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
+            let verified_root_u256 = *_verified_inputs.at(1);
+            let verified_root: felt252 = if verified_root_u256.high == 0 {
+                verified_root_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_root_u256.high.into();
+                let low_u256: u256 = verified_root_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
             // Convert u256 to i32 safely (handles two's complement for negative values)
             let tick_lower_u256 = *_verified_inputs.at(2);
             let verified_tick_lower: i32 = if tick_lower_u256.low >= 2147483648 { // 2^31
@@ -664,8 +849,26 @@ pub mod Zylith {
                 tick_upper_u256.low.try_into().unwrap()
             };
             let verified_liquidity: u128 = (*_verified_inputs.at(4)).low;
-            let verified_new_commitment: felt252 = (*_verified_inputs.at(5)).try_into().unwrap();
-            let position_commitment: felt252 = (*_verified_inputs.at(6)).try_into().unwrap();
+            let verified_new_commitment_u256 = *_verified_inputs.at(5);
+            let verified_new_commitment: felt252 = if verified_new_commitment_u256.high == 0 {
+                verified_new_commitment_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_new_commitment_u256.high.into();
+                let low_u256: u256 = verified_new_commitment_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
+            let position_commitment_u256 = *_verified_inputs.at(6);
+            let position_commitment: felt252 = if position_commitment_u256.high == 0 {
+                position_commitment_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = position_commitment_u256.high.into();
+                let low_u256: u256 = position_commitment_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
 
             // Step 3 - Validate verified values
             // CRITICAL: Check root is known (current OR historical)
@@ -689,11 +892,11 @@ pub mod Zylith {
             assert!(tick_upper % tick::TICK_SPACING == 0);
             assert!(liquidity > 0);
 
-            // Derive position owner from position_commitment
+            // Use position_commitment directly as the position key
             // Must match the same commitment used when the position was created via private_mint
-            let position_owner: ContractAddress = position_commitment.try_into().unwrap();
-            let position_key = (position_owner, tick_lower, tick_upper);
-            let position_info = self.positions.positions.entry(position_key).read();
+            // Note: position_commitment is a felt252, not a ContractAddress
+            let position_key = (position_commitment, tick_lower, tick_upper);
+            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
 
             // Ensure we don't burn more than available
             let burn_amount: u128 = if position_info.liquidity < liquidity {
@@ -903,8 +1106,10 @@ pub mod Zylith {
             );
 
             // Update position - read struct, modify, write back
-            let position_key = (caller, tick_lower, tick_upper);
-            let position_info = self.positions.positions.entry(position_key).read();
+            // Convert ContractAddress to felt252 for storage key
+            let caller_felt: felt252 = caller.into();
+            let position_key = (caller_felt, tick_lower, tick_upper);
+            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
 
             // Calculate fees owed before updating
             let position_liquidity = position_info.liquidity;
@@ -1062,8 +1267,10 @@ pub mod Zylith {
             assert!(tick_upper % tick::TICK_SPACING == 0);
 
             let caller = get_caller_address();
-            let position_key = (caller, tick_lower, tick_upper);
-            let position_info = self.positions.positions.entry(position_key).read();
+            // Convert ContractAddress to felt252 for storage key
+            let caller_felt: felt252 = caller.into();
+            let position_key = (caller_felt, tick_lower, tick_upper);
+            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
 
             // Ensure we don't burn more than available
             let burn_amount: u128 = if position_info.liquidity < amount {
@@ -1181,8 +1388,10 @@ pub mod Zylith {
         /// Collect fees from a position
         fn collect(ref self: ContractState, tick_lower: i32, tick_upper: i32) -> (u128, u128) {
             let caller = get_caller_address();
-            let position_key = (caller, tick_lower, tick_upper);
-            let position_info = self.positions.positions.entry(position_key).read();
+            // Convert ContractAddress to felt252 for storage key
+            let caller_felt: felt252 = caller.into();
+            let position_key = (caller_felt, tick_lower, tick_upper);
+            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
 
             // Calculate fee growth inside
             let fee_growth_inside0 = InternalFunctionsImpl::_get_fee_growth_inside(
@@ -1256,10 +1465,13 @@ pub mod Zylith {
             ref self: ContractState,
             proof: Array<felt252>,
             public_inputs: Array<felt252>,
-            tick_lower: i32,
-            tick_upper: i32,
+            tick_lower_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_upper_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
             new_commitment: felt252,
         ) -> (u128, u128) {
+            // Convert felt252 to i32 for internal CLMM logic
+            let tick_lower: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_lower_felt);
+            let tick_upper: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_upper_felt);
             // Step 1 - Verify ZK proof using Garaga LP verifier
             // Garaga verifier expects full_proof_with_hints = [proof (8 elements) + public_inputs]
             let mut full_proof_with_hints = proof;
@@ -1299,8 +1511,16 @@ pub mod Zylith {
             // 5: position_commitment (unique identifier for the LP position)
             assert(_verified_inputs.len() >= 6, 'INVALID_VERIFIED_INPUTS_LEN');
 
-            let verified_nullifier: felt252 = (*_verified_inputs.at(0)).try_into().unwrap();
-            let verified_root: felt252 = (*_verified_inputs.at(1)).try_into().unwrap();
+            // Extract felt252 values from u256
+            // Extract felt252 values from u256 - always use .low for felt252 values
+            // The verifier returns u256, but these were originally felt252 values
+            // When a felt252 >= 2^128 is converted to u256, it will have high != 0
+            // However, the high part is just an artifact of the conversion, not the real value
+            // We must always use .low because felt252 values are always < 2^252
+            let verified_nullifier_u256 = *_verified_inputs.at(0);
+            let verified_nullifier: felt252 = verified_nullifier_u256.low.try_into().unwrap();
+            let verified_root_u256 = *_verified_inputs.at(1);
+            let verified_root: felt252 = verified_root_u256.low.try_into().unwrap();
             // Convert u256 to i32 safely (handles two's complement for negative values)
             let tick_lower_u256 = *_verified_inputs.at(2);
             let verified_tick_lower: i32 = if tick_lower_u256.low >= 2147483648 { // 2^31
@@ -1322,8 +1542,26 @@ pub mod Zylith {
             } else {
                 tick_upper_u256.low.try_into().unwrap()
             };
-            let verified_new_commitment: felt252 = (*_verified_inputs.at(4)).try_into().unwrap();
-            let position_commitment: felt252 = (*_verified_inputs.at(5)).try_into().unwrap();
+            let verified_new_commitment_u256 = *_verified_inputs.at(4);
+            let verified_new_commitment: felt252 = if verified_new_commitment_u256.high == 0 {
+                verified_new_commitment_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = verified_new_commitment_u256.high.into();
+                let low_u256: u256 = verified_new_commitment_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
+            let position_commitment_u256 = *_verified_inputs.at(5);
+            let position_commitment: felt252 = if position_commitment_u256.high == 0 {
+                position_commitment_u256.low.try_into().unwrap()
+            } else {
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let high_u256: u256 = position_commitment_u256.high.into();
+                let low_u256: u256 = position_commitment_u256.low.into();
+                let reconstructed: u256 = high_u256 * q128 + low_u256;
+                reconstructed.try_into().unwrap()
+            };
 
             // Step 3 - Validate verified values
             let is_valid_root = InternalFunctionsImpl::_is_root_known(ref self, verified_root);
@@ -1340,10 +1578,10 @@ pub mod Zylith {
             self.nullifiers.spent_nullifiers.entry(verified_nullifier).write(true);
 
             // Step 5 - Calculate fees for the private position
-            // Derive position owner from position_commitment
-            let position_owner: ContractAddress = position_commitment.try_into().unwrap();
-            let position_key = (position_owner, tick_lower, tick_upper);
-            let position_info = self.positions.positions.entry(position_key).read();
+            // Use position_commitment directly as the position key
+            // Note: position_commitment is a felt252, not a ContractAddress
+            let position_key = (position_commitment, tick_lower, tick_upper);
+            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
 
             // Calculate fee growth inside
             let fee_growth_inside0 = InternalFunctionsImpl::_get_fee_growth_inside(
@@ -1412,6 +1650,29 @@ pub mod Zylith {
     /// Internal helper functions grouped using generate_trait
     #[generate_trait]
     impl InternalFunctionsImpl of InternalFunctionsTrait {
+        /// Helper function to convert felt252 to i32
+        /// Handles negative values using Cairo prime field arithmetic
+        /// Negative i32 values are represented as: PRIME - abs(value)
+        /// This is needed because Starknet.js cannot serialize i32 in ABIs
+        fn _felt252_to_i32(ref self: ContractState, felt: felt252) -> i32 {
+            let PRIME: u256 = 3618502788666131106986593281521497120414687020801267626233049500247285301248;
+            let PRIME_HALF: u256 = 1809251394333065553493296640760748560207343510400633813116524750123642650624;
+            
+            // Convert felt252 to u256 for comparison
+            let felt_u256: u256 = felt.into();
+            
+            // If value is in upper half of felt252 field, it's negative
+            if felt_u256 > PRIME_HALF {
+                // This is a negative number: convert felt252 to negative i32
+                let abs_value: u256 = PRIME - felt_u256;
+                let abs_i32: i32 = abs_value.low.try_into().unwrap();
+                -abs_i32
+            } else {
+                // Positive number
+                felt_u256.low.try_into().unwrap()
+            }
+        }
+
         /// Internal function to insert a commitment into the Merkle tree
         /// This does NOT transfer tokens - used by private_swap and other internal operations
         /// Returns the new Merkle root
