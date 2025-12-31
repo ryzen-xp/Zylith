@@ -175,3 +175,160 @@ fn test_initialize_twice_fails() {
 
     stop_cheat_caller_address(setup.zylith.contract_address);
 }
+
+
+// ============================================================================
+//  Private Mint & Burn Liquidity
+// ============================================================================
+
+#[test]
+fn test_private_mint_liquidity_with_valid_proof() {
+    let setup = setup_with_erc20();
+    initialize_pool(@setup);
+
+    start_cheat_caller_address(setup.zylith.contract_address, caller());
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            TEST_FEE,
+            TICK_SPACING,
+            sqrt_price,
+        );
+    stop_cheat_caller_address(setup.zylith.contract_address);
+
+    // Deposit tokens first
+    let commitment: felt252 = 0x111;
+    let amount: u256 = 1000000000000000000;
+    start_cheat_caller_address(setup.zylith.contract_address, caller());
+    setup.zylith.private_deposit(setup.token0.contract_address, amount, commitment);
+    setup.zylith.private_deposit(setup.token1.contract_address, amount, commitment);
+    let current_root = setup.zylith.get_merkle_root();
+    stop_cheat_caller_address(setup.zylith.contract_address);
+
+    // Prepare mint
+    let mut proof = array![0x1, current_root, 4294961296, 6000, 100000000000000, 1700530663063887801134503153749850134025312614654876159533045756060942041183, 0x7, 0x8];
+    let nullifier: felt252 = 0x1;
+    let new_commitment: felt252 =
+        1700530663063887801134503153749850134025312614654876159533045756060942041183;
+    let position_commitment: felt252 = 0x333;
+    let tick_lower: felt252 = 4294961296;
+    let tick_upper: felt252 = 6000;
+    let liquidity: u128 = 100000000000000;
+
+    let mut public_inputs = array![
+        nullifier, current_root, tick_lower.into(), tick_upper.into(), liquidity.into(),
+        new_commitment, position_commitment,
+    ];
+
+    start_cheat_caller_address(setup.zylith.contract_address, caller());
+    let (amount0, amount1) = setup
+        .zylith
+        .private_mint_liquidity(
+            proof, public_inputs, tick_lower, tick_upper, liquidity, new_commitment,
+        );
+    stop_cheat_caller_address(setup.zylith.contract_address);
+
+    assert!(amount0 > 0 || amount1 > 0, "Should mint some liquidity");
+    assert!(setup.zylith.is_nullifier_spent(nullifier), "Nullifier should be spent");
+}
+
+#[test]
+fn test_private_burn_liquidity_with_valid_proof() {
+    let setup = setup_with_erc20();
+    initialize_pool(@setup);
+
+    // Initialize pool
+
+    start_cheat_caller_address(setup.zylith.contract_address, caller());
+    setup
+        .zylith
+        .initialize(
+            setup.token0.contract_address,
+            setup.token1.contract_address,
+            TEST_FEE,
+            TICK_SPACING,
+            sqrt_price,
+        );
+    stop_cheat_caller_address(setup.zylith.contract_address);
+
+    // Private deposit
+
+    let deposit_commitment: felt252 = 0x111;
+    let deposit_amount: u256 = 10_000_000_000_000_000_000; // 10 tokens
+
+    start_cheat_caller_address(setup.zylith.contract_address, caller());
+    setup.zylith.private_deposit(setup.token0.contract_address, deposit_amount, deposit_commitment);
+    setup.zylith.private_deposit(setup.token1.contract_address, deposit_amount, deposit_commitment);
+    stop_cheat_caller_address(setup.zylith.contract_address);
+
+    let root_before_mint = setup.zylith.get_merkle_root();
+
+    // Private mint liquidity
+
+    let tick_lower: felt252 = 120;
+    let tick_upper: felt252 = 240;
+    let minted_liquidity: u128 = 2_000_000;
+
+    let mint_nullifier: felt252 = 0x01;
+    let new_commitment_after_mint: felt252 = 0x222;
+    let position_commitment: felt252 = 0x333;
+
+    let mint_proof = array![
+        mint_nullifier, root_before_mint, tick_lower.into(), tick_upper.into(),
+        minted_liquidity.into(), new_commitment_after_mint, position_commitment,
+    ];
+
+    let mint_public_inputs = array![
+        mint_nullifier, root_before_mint, tick_lower.into(), tick_upper.into(),
+        minted_liquidity.into(), new_commitment_after_mint, position_commitment,
+    ];
+
+    start_cheat_caller_address(setup.zylith.contract_address, caller());
+    setup
+        .zylith
+        .private_mint_liquidity(
+            mint_proof,
+            mint_public_inputs,
+            tick_lower,
+            tick_upper,
+            minted_liquidity,
+            new_commitment_after_mint,
+        );
+    stop_cheat_caller_address(setup.zylith.contract_address);
+
+    let root_after_mint = setup.zylith.get_merkle_root();
+
+    // Private burn liquidity
+
+    let burn_liquidity: u128 = 1_000_000; // <= minted_liquidity
+    let burn_nullifier: felt252 = 0x999;
+    let new_commitment_after_burn: felt252 = 0x555;
+
+    let burn_proof = array![
+        burn_nullifier, root_after_mint, tick_lower.into(), tick_upper.into(),
+        burn_liquidity.into(), new_commitment_after_burn, position_commitment,
+    ];
+
+    let burn_public_inputs = array![
+        burn_nullifier, root_after_mint, tick_lower.into(), tick_upper.into(),
+        burn_liquidity.into(), new_commitment_after_burn, position_commitment,
+    ];
+
+    start_cheat_caller_address(setup.zylith.contract_address, caller());
+    let (amount0, amount1) = setup
+        .zylith
+        .private_burn_liquidity(
+            burn_proof,
+            burn_public_inputs,
+            tick_lower,
+            tick_upper,
+            burn_liquidity,
+            new_commitment_after_burn,
+        );
+    stop_cheat_caller_address(setup.zylith.contract_address);
+
+    assert!(amount0 > 0 || amount1 > 0, "Burn should return tokens");
+    assert!(setup.zylith.is_nullifier_spent(burn_nullifier), "Burn nullifier must be spent");
+}

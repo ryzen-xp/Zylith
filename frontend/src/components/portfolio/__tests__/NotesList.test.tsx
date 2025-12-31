@@ -127,7 +127,7 @@ describe("NotesList - Note Management (TODO 4.4)", () => {
     // Test leaf index extraction logic
     const mockEvent = {
       from_address:
-        "0x04be88b8ded4bcb9bef0d7afce05c8eff7df67714a2e6a9371ed1151948a3dc3",
+        "0x03a2134229b1938316f0db062a15c79a426df51805f57e8efcf306ef1e916aa6",
       keys: [
         "0x9149d2123147c5f43d258257fef0b7b969db78269369ebcf5ebb9eef8592f2",
       ],
@@ -146,7 +146,7 @@ describe("NotesList - Note Management (TODO 4.4)", () => {
     // Test fallback when leaf index is not found
     const mockEvent = {
       from_address:
-        "0x04be88b8ded4bcb9bef0d7afce05c8eff7df67714a2e6a9371ed1151948a3dc3",
+        "0x03a2134229b1938316f0db062a15c79a426df51805f57e8efcf306ef1e916aa6",
       keys: [
         "0x9149d2123147c5f43d258257fef0b7b969db78269369ebcf5ebb9eef8592f2",
       ],

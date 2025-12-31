@@ -532,14 +532,15 @@ pub mod Zylith {
         /// Private mint - add liquidity with ZK proof verification
         /// The proof verifies ownership of a commitment with sufficient balance
         /// Tick ranges remain public in MVP (bounds privacy deferred)
-        /// NOTE: tick_lower and tick_upper are felt252 in the interface (for Starknet.js compatibility)
+        /// NOTE: tick_lower and tick_upper are felt252 in the interface (for Starknet.js
+        /// compatibility)
         /// but converted to i32 internally for CLMM logic
         fn private_mint_liquidity(
             ref self: ContractState,
             proof: Array<felt252>,
             public_inputs: Array<felt252>,
-            tick_lower_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
-            tick_upper_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
             liquidity: u128,
             new_commitment: felt252,
         ) -> (u128, u128) {
@@ -592,65 +593,70 @@ pub mod Zylith {
             // Extract felt252 values from u256 - reconstruct full value when high != 0
             let verified_nullifier_u256 = *_verified_inputs.at(0);
             let verified_nullifier: felt252 = if verified_nullifier_u256.high == 0 {
-                verified_nullifier_u256.low.try_into().unwrap()
+                verified_nullifier_u256.low.try_into().expect('Failed_u128_into_felt252') 
             } else {
                 let q128: u256 = 340282366920938463463374607431768211456; // 2^128
                 let high_u256: u256 = verified_nullifier_u256.high.into();
                 let low_u256: u256 = verified_nullifier_u256.low.into();
                 let reconstructed: u256 = high_u256 * q128 + low_u256;
-                reconstructed.try_into().unwrap()
+                reconstructed.try_into().expect('Failed_u256_into_felt252') 
             };
             let verified_root_u256 = *_verified_inputs.at(1);
             let verified_root: felt252 = if verified_root_u256.high == 0 {
-                verified_root_u256.low.try_into().unwrap()
+                verified_root_u256.low.try_into().expect('Failed_u128_into_felt252') 
             } else {
                 let q128: u256 = 340282366920938463463374607431768211456; // 2^128
                 let high_u256: u256 = verified_root_u256.high.into();
                 let low_u256: u256 = verified_root_u256.low.into();
                 let reconstructed: u256 = high_u256 * q128 + low_u256;
-                reconstructed.try_into().unwrap()
+                reconstructed.try_into().expect('Failed_u256_into_felt252') 
             };
             // Convert u256 to i32 safely (handles two's complement for negative values)
             let tick_lower_u256 = *_verified_inputs.at(2);
-            let verified_tick_lower: i32 = if tick_lower_u256.low >= 2147483648 { // 2^31
-                let two_to_32: u256 = 4294967296; // 2^32
-                let value_u256: u256 = tick_lower_u256.low.into();
-                let complement: u256 = two_to_32 - value_u256; // 2^32 - value
-                let neg_val: i32 = complement.low.try_into().unwrap();
-                -neg_val
+            let value = tick_lower_u256.low; // u128, must be < 2^32
+
+            assert(value <= 4294967295, 'TICK_OVERFLOW');
+
+            // Step 1: Convert u128 to u32 first (this is safe now)
+            let value_u32: u32 = value.try_into().expect('u32 conversion failed');
+
+            // Step 2: Handle two's complement on u32 (avoiding u128 arithmetic)
+            let verified_tick_lower: i32 = if value_u32 >= 2147483648 {
+                // Negative number: use bitwise complement instead of subtraction
+                let complement = value_u32 ^ 0xFFFFFFFF_u32; // Flip all bits
+                let magnitude = complement + 1_u32; // Add 1
+                let as_i32: i32 = magnitude.try_into().expect('i32 conversion failed');
+                -as_i32
             } else {
-                tick_lower_u256.low.try_into().unwrap()
+                // Positive number: direct conversion
+                value_u32.try_into().expect('i32 conversion failed')
             };
             let tick_upper_u256 = *_verified_inputs.at(3);
-            let verified_tick_upper: i32 = if tick_upper_u256.low >= 2147483648 { // 2^31
-                let two_to_32: u256 = 4294967296; // 2^32
-                let value_u256: u256 = tick_upper_u256.low.into();
-                let complement: u256 = two_to_32 - value_u256; // 2^32 - value
-                let neg_val: i32 = complement.low.try_into().unwrap();
-                -neg_val
-            } else {
-                tick_upper_u256.low.try_into().unwrap()
-            };
+
+            let verified_tick_upper: i32 = InternalFunctionsImpl::safe_tick_conversion(
+                tick_upper_u256,
+            );
+
             let verified_liquidity: u128 = (*_verified_inputs.at(4)).low;
             let verified_new_commitment_u256 = *_verified_inputs.at(5);
             let verified_new_commitment: felt252 = if verified_new_commitment_u256.high == 0 {
-                verified_new_commitment_u256.low.try_into().unwrap()
+                verified_new_commitment_u256.low.try_into().expect('Failed_u128_into_felt252') 
             } else {
                 let q128: u256 = 340282366920938463463374607431768211456; // 2^128
                 let high_u256: u256 = verified_new_commitment_u256.high.into();
                 let low_u256: u256 = verified_new_commitment_u256.low.into();
                 let reconstructed: u256 = high_u256 * q128 + low_u256;
-                reconstructed.try_into().unwrap()
+                reconstructed.try_into().expect('Failed_u256_into_felt252') 
             };
             let position_commitment_u256 = *_verified_inputs.at(6);
             let position_commitment: felt252 = if position_commitment_u256.high == 0 {
-                position_commitment_u256.low.try_into().unwrap()
+                position_commitment_u256.low.try_into().expect('Failed_u128_into_felt252') 
             } else {
                 let q128: u256 = 340282366920938463463374607431768211456; // 2^128
                 let high_u256: u256 = position_commitment_u256.high.into();
                 let low_u256: u256 = position_commitment_u256.low.into();
                 let reconstructed: u256 = high_u256 * q128 + low_u256;
-                reconstructed.try_into().unwrap()
+                reconstructed.try_into().expect('Failed_u256_into_felt252') 
             };
 
             // Step 3 - Validate verified values match call parameters
@@ -720,7 +726,11 @@ pub mod Zylith {
 
             // Update position
             // position_key was already set above using position_commitment
-            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
+            let position_info: zylith::clmm::position::PositionInfo = self
+                .positions
+                .positions
+                .entry(position_key)
+                .read();
 
             let updated_position = zylith::clmm::position::PositionInfo {
                 liquidity: position_info.liquidity + liquidity,
@@ -755,8 +765,8 @@ pub mod Zylith {
             ref self: ContractState,
             proof: Array<felt252>,
             public_inputs: Array<felt252>,
-            tick_lower_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
-            tick_upper_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
             liquidity: u128,
             new_commitment: felt252,
         ) -> (u128, u128) {
@@ -896,7 +906,11 @@ pub mod Zylith {
             // Must match the same commitment used when the position was created via private_mint
             // Note: position_commitment is a felt252, not a ContractAddress
             let position_key = (position_commitment, tick_lower, tick_upper);
-            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
+            let position_info: zylith::clmm::position::PositionInfo = self
+                .positions
+                .positions
+                .entry(position_key)
+                .read();
 
             // Ensure we don't burn more than available
             let burn_amount: u128 = if position_info.liquidity < liquidity {
@@ -1109,7 +1123,11 @@ pub mod Zylith {
             // Convert ContractAddress to felt252 for storage key
             let caller_felt: felt252 = caller.into();
             let position_key = (caller_felt, tick_lower, tick_upper);
-            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
+            let position_info: zylith::clmm::position::PositionInfo = self
+                .positions
+                .positions
+                .entry(position_key)
+                .read();
 
             // Calculate fees owed before updating
             let position_liquidity = position_info.liquidity;
@@ -1270,7 +1288,11 @@ pub mod Zylith {
             // Convert ContractAddress to felt252 for storage key
             let caller_felt: felt252 = caller.into();
             let position_key = (caller_felt, tick_lower, tick_upper);
-            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
+            let position_info: zylith::clmm::position::PositionInfo = self
+                .positions
+                .positions
+                .entry(position_key)
+                .read();
 
             // Ensure we don't burn more than available
             let burn_amount: u128 = if position_info.liquidity < amount {
@@ -1391,7 +1413,11 @@ pub mod Zylith {
             // Convert ContractAddress to felt252 for storage key
             let caller_felt: felt252 = caller.into();
             let position_key = (caller_felt, tick_lower, tick_upper);
-            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
+            let position_info: zylith::clmm::position::PositionInfo = self
+                .positions
+                .positions
+                .entry(position_key)
+                .read();
 
             // Calculate fee growth inside
             let fee_growth_inside0 = InternalFunctionsImpl::_get_fee_growth_inside(
@@ -1465,8 +1491,8 @@ pub mod Zylith {
             ref self: ContractState,
             proof: Array<felt252>,
             public_inputs: Array<felt252>,
-            tick_lower_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
-            tick_upper_felt: felt252,  // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
             new_commitment: felt252,
         ) -> (u128, u128) {
             // Convert felt252 to i32 for internal CLMM logic
@@ -1581,7 +1607,11 @@ pub mod Zylith {
             // Use position_commitment directly as the position key
             // Note: position_commitment is a felt252, not a ContractAddress
             let position_key = (position_commitment, tick_lower, tick_upper);
-            let position_info: zylith::clmm::position::PositionInfo = self.positions.positions.entry(position_key).read();
+            let position_info: zylith::clmm::position::PositionInfo = self
+                .positions
+                .positions
+                .entry(position_key)
+                .read();
 
             // Calculate fee growth inside
             let fee_growth_inside0 = InternalFunctionsImpl::_get_fee_growth_inside(
@@ -1655,21 +1685,76 @@ pub mod Zylith {
         /// Negative i32 values are represented as: PRIME - abs(value)
         /// This is needed because Starknet.js cannot serialize i32 in ABIs
         fn _felt252_to_i32(ref self: ContractState, felt: felt252) -> i32 {
-            let PRIME: u256 = 3618502788666131106986593281521497120414687020801267626233049500247285301248;
-            let PRIME_HALF: u256 = 1809251394333065553493296640760748560207343510400633813116524750123642650624;
-            
-            // Convert felt252 to u256 for comparison
-            let felt_u256: u256 = felt.into();
-            
-            // If value is in upper half of felt252 field, it's negative
-            if felt_u256 > PRIME_HALF {
-                // This is a negative number: convert felt252 to negative i32
-                let abs_value: u256 = PRIME - felt_u256;
-                let abs_i32: i32 = abs_value.low.try_into().unwrap();
-                -abs_i32
+            let value_u256: u256 = felt.into();
+
+            // Constants for 32-bit signed integers
+            let TWO_POW_31: u256 = 2147483648; // 2^31
+            let TWO_POW_32: u256 = 4294967296; // 2^32
+
+            // Validate input range
+            assert(value_u256 < TWO_POW_32, 'Value exceeds i32 range');
+
+            // If highest bit (sign bit) is set → negative
+            if value_u256 >= TWO_POW_31 {
+                // For negative numbers: convert from two's complement
+                // signed_value = value - 2^32
+                let unsigned_diff = TWO_POW_32 - value_u256;
+                let as_i32: Option<i32> = unsigned_diff.low.try_into();
+
+                match as_i32 {
+                    Option::Some(val) => -val,
+                    Option::None => {
+                        assert!(false, "Failed to convert to i32");
+                        0
+                    },
+                }
             } else {
-                // Positive number
-                felt_u256.low.try_into().unwrap()
+                // Positive number - direct conversion
+                let as_i32: Option<i32> = value_u256.low.try_into();
+
+                match as_i32 {
+                    Option::Some(val) => val,
+                    Option::None => {
+                        assert!(false, "Failed to convert to i32");
+                        0 // Unreachable but needed for type system
+                    },
+                }
+            }
+        }
+
+        fn safe_tick_conversion(tick_value: u256) -> i32 {
+            // Step 1: Validate range
+            if tick_value.high != 0 {
+                assert(false, 'Tick high bits set');
+                return 0;
+            }
+
+            let tick_low_u128 = tick_value.low;
+
+            // Step 2: Check if it fits in u32
+            if tick_low_u128 > 4294967295_u128 {
+                assert(false, 'Tick exceeds 32 bits');
+                return 0;
+            }
+
+            // Step 3: Convert u128 to u32 (safe now)
+            let tick_u32: u32 = tick_low_u128.try_into().expect('u32 conv');
+
+            // Step 4: Interpret as i32
+            // Examples:
+            // 1000 -> 1000 (positive)
+            // 4294966296 = 0xFFFFFC18 -> -1000 (negative)
+
+            if tick_u32 < 0x80000000_u32 {
+                // Positive (bit 31 = 0)
+                tick_u32.try_into().expect('i32 conv')
+            } else {
+                // Negative (bit 31 = 1)
+                // Two's complement: flip bits and add 1, then negate
+                let flipped = tick_u32 ^ 0xFFFFFFFF_u32; // XOR to flip all bits
+                let magnitude = flipped + 1_u32;
+                let as_i32: i32 = magnitude.try_into().expect('magnitude conv');
+                -as_i32
             }
         }
 
