@@ -38,8 +38,8 @@ pub trait IZylith<TContractState> {
         ref self: TContractState,
         proof: Array<felt252>,
         public_inputs: Array<felt252>,
-        tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-        tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+        tick_lower: i32, // ← Changed from i32 to felt252 for Starknet.js compatibility
+        tick_upper: i32, // ← Changed from i32 to felt252 for Starknet.js compatibility
         liquidity: u128,
         new_commitment: felt252,
     ) -> (u128, u128);
@@ -48,8 +48,8 @@ pub trait IZylith<TContractState> {
         ref self: TContractState,
         proof: Array<felt252>,
         public_inputs: Array<felt252>,
-        tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-        tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+        tick_lower: i32, // ← Changed from i32 to felt252 for Starknet.js compatibility
+        tick_upper: i32, // ← Changed from i32 to felt252 for Starknet.js compatibility
         liquidity: u128,
         new_commitment: felt252,
     ) -> (u128, u128);
@@ -58,8 +58,8 @@ pub trait IZylith<TContractState> {
         ref self: TContractState,
         proof: Array<felt252>,
         public_inputs: Array<felt252>,
-        tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-        tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+        tick_lower: i32, // ← Changed from i32 to felt252 for Starknet.js compatibility
+        tick_upper: i32, // ← Changed from i32 to felt252 for Starknet.js compatibility
         new_commitment: felt252,
     ) -> (u128, u128);
 

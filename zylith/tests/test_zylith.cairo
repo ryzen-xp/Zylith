@@ -208,13 +208,16 @@ fn test_private_mint_liquidity_with_valid_proof() {
     stop_cheat_caller_address(setup.zylith.contract_address);
 
     // Prepare mint
-    let mut proof = array![0x1, current_root, 4294961296, 6000, 100000000000000, 1700530663063887801134503153749850134025312614654876159533045756060942041183, 0x7, 0x8];
+    let mut proof = array![
+        0x1, current_root, 4294961296, 6000, 100000000000000,
+        1700530663063887801134503153749850134025312614654876159533045756060942041183, 0x7, 0x8,
+    ];
     let nullifier: felt252 = 0x1;
     let new_commitment: felt252 =
         1700530663063887801134503153749850134025312614654876159533045756060942041183;
     let position_commitment: felt252 = 0x333;
-    let tick_lower: felt252 = 4294961296;
-    let tick_upper: felt252 = 6000;
+    let tick_lower: i32 = -1000;
+    let tick_upper: i32 = 6000;
     let liquidity: u128 = 100000000000000;
 
     let mut public_inputs = array![
@@ -267,8 +270,8 @@ fn test_private_burn_liquidity_with_valid_proof() {
 
     // Private mint liquidity
 
-    let tick_lower: felt252 = 120;
-    let tick_upper: felt252 = 240;
+    let tick_lower: i32 = -120;
+    let tick_upper: i32 = 240;
     let minted_liquidity: u128 = 2_000_000;
 
     let mint_nullifier: felt252 = 0x01;

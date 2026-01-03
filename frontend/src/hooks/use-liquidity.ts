@@ -178,27 +178,24 @@ export function useLiquidity() {
         }
 
         // Validate commitment for each candidate note until we find a valid one
-        // This ensures we only select notes whose commitment matches the Merkle tree
         console.log(
           "[Frontend] 🔍 Validating note commitments against Merkle tree..."
         );
         let inputNote: Note | null = null;
         let noteIndex: number | null = null;
-        let merkleProof: any = null; // Store Merkle proof to reuse later
+        let merkleProof: any = null;
 
         for (const candidate of candidateNotes) {
           if (candidate.index === undefined || candidate.index === null) {
-            continue; // Skip notes without index (shouldn't happen after filtering)
+            continue;
           }
 
           try {
-            // Get Merkle proof to verify commitment matches
             const proof = await aspClientInstance.getMerkleProof(
               candidate.index
             );
             const treeCommitment = BigInt(proof.leaf);
 
-            // Calculate what the commitment should be from note data
             const { generateCommitment } = await import("@/lib/commitment");
             const calculatedCommitment = await generateCommitment(
               candidate.secret,
@@ -206,12 +203,10 @@ export function useLiquidity() {
               candidate.amount
             );
 
-            // Check if commitment matches
             if (treeCommitment === calculatedCommitment) {
-              // This note is valid! Save the proof to reuse later
               inputNote = candidate;
               noteIndex = candidate.index;
-              merkleProof = proof; // Save proof to avoid fetching again
+              merkleProof = proof;
               console.log("[Frontend] ✅ Found valid note:", {
                 index: noteIndex,
                 amount: inputNote.amount.toString(),
@@ -227,20 +222,12 @@ export function useLiquidity() {
               console.log(
                 `[Frontend] ⚠️ Skipping note at index ${candidate.index}: commitment mismatch`
               );
-              console.log(
-                `  Tree: ${treeCommitment.toString().substring(0, 20)}...`
-              );
-              console.log(
-                `  Calculated: ${calculatedCommitment
-                  .toString()
-                  .substring(0, 20)}...`
-              );
             }
           } catch (error: any) {
             console.log(
               `[Frontend] ⚠️ Skipping note at index ${candidate.index}: validation error - ${error.message}`
             );
-            continue; // Try next note
+            continue;
           }
         }
 
@@ -258,14 +245,9 @@ export function useLiquidity() {
           amount: inputNote.amount.toString(),
           commitment: inputNote.commitment.toString().substring(0, 20) + "...",
           tokenAddress: inputNote.tokenAddress,
-          validIndex: `✅ Index ${noteIndex} is valid (0-${
-            treeInfo.leaf_count - 1
-          })`,
-          validCommitment: "✅ Commitment matches Merkle tree",
         });
 
-        // Generate position commitment: Mask(Poseidon(secret, tick_lower + tick_upper))
-        // This must match the circuit's calculation in lp.circom
+        // Generate position commitment
         const positionCommitment = await generatePositionCommitment(
           inputNote.secret,
           tickLower,
@@ -277,7 +259,7 @@ export function useLiquidity() {
           positionCommitment.toString()
         );
 
-        // Step 1: Use Merkle Proof (already fetched during validation, or fetch if not available)
+        // Step 1: Use Merkle Proof
         if (!merkleProof) {
           console.log(
             "[Frontend] 🔄 Fetching Merkle proof (not cached during validation)..."
@@ -295,8 +277,7 @@ export function useLiquidity() {
           pathLength: merkleProof.path?.length || 0,
         });
 
-        // Step 0: Validate note against Merkle tree (security check)
-        // This ensures the note can be used for ZK operations
+        // Validate note against Merkle tree
         const validation = await validateNote(inputNote);
 
         console.log("[Frontend] ✅ Validation result:", {
@@ -306,57 +287,25 @@ export function useLiquidity() {
         });
 
         if (!validation.isValid) {
-          // Note is invalid - provide helpful error message with actionable solution
           if (validation.isLegacy) {
             throw new Error(
               `⚠️ Legacy Note Detected\n\n` +
                 `This note was deposited before the Poseidon implementation fix. ` +
-                `The commitment in the Merkle tree was computed using Starknet's Poseidon, ` +
-                `but the circuit now requires BN254 Poseidon.\n\n` +
-                `🔧 Solution:\n` +
-                `1. Go to the Deposit page\n` +
-                `2. Create a new deposit with the same amount\n` +
-                `3. The new note will use BN254 Poseidon and work with all ZK operations\n\n` +
-                `Note: Your secret and nullifier are still valid - you just need to ` +
-                `re-deposit to update the commitment in the Merkle tree.`
+                `Please create a new deposit to update the commitment in the Merkle tree.`
             );
           } else {
-            // Provide more specific guidance based on the error
-            const treeCommitmentStr =
-              validation.treeCommitment?.toString() || "unknown";
-            const calculatedStr =
-              validation.calculatedCommitment?.toString() || "unknown";
-            const legacyStr =
-              validation.legacyCommitment?.toString() || "unknown";
-
             throw new Error(
               `⚠️ Invalid Note - Cannot Generate Valid Proof\n\n` +
-                `The note's data (secret/nullifier/amount) doesn't match what's stored in the Merkle tree.\n\n` +
-                `Details:\n` +
-                `- Tree commitment: ${treeCommitmentStr}\n` +
-                `- Calculated (BN254): ${calculatedStr}\n` +
-                `- Legacy (Starknet): ${legacyStr}\n\n` +
-                `🔧 Solution:\n` +
-                `1. Go to the Deposit page\n` +
-                `2. Create a new deposit with the amount you want to use\n` +
-                `3. The new note will work with all ZK operations (swap, LP, withdraw)\n\n` +
-                `This note cannot be used because the circuit verifies that you know the secret/nullifier ` +
-                `that produce the commitment in the tree. Since they don't match, the proof would fail.`
+                `The note's data doesn't match what's stored in the Merkle tree. ` +
+                `Please create a new deposit.`
             );
           }
         }
 
-        console.log("[Frontend] ✅ Note validation passed:", {
-          treeCommitment: validation.treeCommitment?.toString(),
-          calculatedCommitment: validation.calculatedCommitment?.toString(),
-        });
-
         const proofLeaf = BigInt(merkleProof.leaf);
 
-        // Step 2: Generate change note (if needed)
+        // Step 2: Generate change note
         setState((prev) => ({ ...prev, proofStep: "generating_witness" }));
-        // Calculate change amount: amount_in - liquidity (simplified for MVP)
-        // In production, this should calculate actual token amounts needed for LP position
         const changeAmount =
           inputNote.amount >= liquidity ? inputNote.amount - liquidity : 0n;
 
@@ -374,9 +323,6 @@ export function useLiquidity() {
         // Step 3: Generate ZK Proof via Backend API
         setState((prev) => ({ ...prev, proofStep: "computing_proof" }));
 
-        // Ensure pathElements are strings and pathIndices are numbers (0 or 1)
-        // pathElements: array of strings (felt252 values)
-        // pathIndices: array of numbers (0 or 1) - selector for left/right in Merkle tree
         const pathElements = Array.isArray(merkleProof.path)
           ? merkleProof.path.map((p: any) => p.toString())
           : [];
@@ -409,7 +355,7 @@ export function useLiquidity() {
           amount_out: changeNote.amount.toString(),
         });
 
-        // Use ASP endpoint for proof generation (uses rapidsnark for faster proofs)
+        // Use ASP endpoint for proof generation
         const aspUrl = CONFIG.ASP_SERVER_URL || "http://localhost:3000";
         const proofResponse = await fetch(`${aspUrl}/api/proof/lp-mint`, {
           method: "POST",
@@ -449,13 +395,12 @@ export function useLiquidity() {
         const proof = proofData.full_proof_with_hints || proofData.proof;
         const publicInputs = proofData.public_inputs || [];
 
-        // Extract proof from full_proof_with_hints if needed (similar to swap)
+        // Extract proof (first 8 elements)
         let extractedProof = proof;
         if (Array.isArray(proof) && proof.length > 8) {
-          // If proof includes public inputs, extract only the first 8 elements
           extractedProof = proof.slice(0, 8);
           console.warn(
-            `[Frontend] ⚠️  Proof had ${proof.length} elements, extracted first 8`
+            `[Frontend] ⚠️ Proof had ${proof.length} elements, extracted first 8`
           );
         }
 
@@ -474,18 +419,10 @@ export function useLiquidity() {
         }
 
         // LP circuit has exactly 7 public inputs:
-        // 0: nullifier (felt252)
-        // 1: root (felt252)
-        // 2: tick_lower (i32)
-        // 3: tick_upper (i32)
-        // 4: liquidity (u128)
-        // 5: new_commitment (felt252)
-        // 6: position_commitment (felt252)
+        // 0: nullifier, 1: root, 2: tick_lower, 3: tick_upper, 4: liquidity, 5: new_commitment, 6: position_commitment
         if (publicInputs.length !== 7) {
           throw new Error(
-            `Invalid public inputs length: expected 7 elements (LP circuit), got ${
-              publicInputs.length
-            }. Public inputs: [${publicInputs.join(", ")}]`
+            `Invalid public inputs length: expected 7 elements, got ${publicInputs.length}`
           );
         }
 
@@ -494,7 +431,7 @@ export function useLiquidity() {
           publicInputs
         );
 
-        // Step 5: Convert BN254 to felt252 (circuit outputs BN254, Starknet needs felt252)
+        // Step 5: Convert BN254 to felt252
         const BN254_MODULUS = BigInt(
           "21888242871839275222246405745257275088548364400416034343698204186575808495617"
         );
@@ -502,34 +439,26 @@ export function useLiquidity() {
           "3618502788666131106986593281521497120414687020801267626233049500247285301248"
         );
 
-        /**
-         * Convert a value from BN254 field to felt252 field
-         * BN254 negative numbers are represented as (BN254_MODULUS - abs(value))
-         * We need to convert them to felt252 negative representation: (STARKNET_FELT_MAX - abs(value))
-         */
         const bn254ToFelt252 = (value: string | bigint): string => {
           try {
             const bigValue = typeof value === "string" ? BigInt(value) : value;
 
-            // Check if this is a BN254 negative number (values > BN254_MODULUS/2 are negative in BN254)
+            // Check if this is a BN254 negative number
             if (bigValue > BN254_MODULUS / 2n) {
-              // This is a negative number in BN254
               const negativeValue = BN254_MODULUS - bigValue;
               const felt252Value = STARKNET_FELT_MAX - negativeValue;
               console.warn(
-                `[Frontend] ⚠️  Converted BN254 negative to felt252: ${bigValue.toString()} -> ${felt252Value.toString()}`
+                `[Frontend] ⚠️ Converted BN254 negative to felt252: ${bigValue.toString()} -> ${felt252Value.toString()}`
               );
               return felt252Value.toString();
             }
 
-            // Positive number, just ensure it's within felt252 range
             return (bigValue % STARKNET_FELT_MAX).toString();
           } catch (e) {
             console.warn(
-              `[Frontend] ⚠️  Could not convert BN254 to felt252 for value: ${value}`,
+              `[Frontend] ⚠️ Could not convert BN254 to felt252 for value: ${value}`,
               e
             );
-            // Fallback: try to parse as string and apply modulo
             try {
               const bigValue = BigInt(value.toString());
               return (bigValue % STARKNET_FELT_MAX).toString();
@@ -539,24 +468,20 @@ export function useLiquidity() {
           }
         };
 
-        /**
-         * Apply felt252 modulo to ensure value is within valid range
-         * This is a safety check after BN254 conversion
-         */
         const applyFeltModulo = (value: string): string => {
           try {
             const bigValue = BigInt(value);
             if (bigValue >= STARKNET_FELT_MAX) {
               const moduloValue = bigValue % STARKNET_FELT_MAX;
               console.warn(
-                `[Frontend] ⚠️  Applied felt252 modulo to value: ${value} -> ${moduloValue.toString()}`
+                `[Frontend] ⚠️ Applied felt252 modulo to value: ${value} -> ${moduloValue.toString()}`
               );
               return moduloValue.toString();
             }
             return value;
           } catch (e) {
             console.warn(
-              `[Frontend] ⚠️  Could not parse value as BigInt: ${value}`
+              `[Frontend] ⚠️ Could not parse value as BigInt: ${value}`
             );
             return value;
           }
@@ -583,14 +508,14 @@ export function useLiquidity() {
           convertedPublicInputs
         );
 
-        // Apply modulo to all proof values (proof should already be in felt252, but apply modulo as safety)
+        // Apply modulo to all proof values
         const normalizedProof = extractedProof.map(applyFeltModulo);
 
-        // Apply modulo to all public input values (after BN254 conversion)
+        // Apply modulo to all public input values
         const normalizedPublicInputs =
           convertedPublicInputs.map(applyFeltModulo);
 
-        // Check for overflow values (after normalization)
+        // Check for overflow values
         console.log(`[Frontend] 🔍 Checking for overflow values...`);
         let hasOverflow = false;
         normalizedProof.forEach((val, idx) => {
@@ -614,7 +539,7 @@ export function useLiquidity() {
 
         if (hasOverflow) {
           throw new Error(
-            `[Frontend] ❌ OVERFLOW DETECTED! Some values still exceed felt252 max after normalization.`
+            `[Frontend] ❌ OVERFLOW DETECTED! Some values exceed felt252 max.`
           );
         } else {
           console.log(
@@ -622,69 +547,12 @@ export function useLiquidity() {
           );
         }
 
-        // Step 6: Execute transaction using manual calldata construction
+        // Step 6: Execute transaction
         setState((prev) => ({ ...prev, proofStep: "verifying" }));
 
         console.log(
           `[Frontend] 📋 Executing mint liquidity with manual calldata`
         );
-        console.log(`[Frontend] 📋 Contract: ${CONFIG.ZYLITH_CONTRACT}`);
-        console.log(`[Frontend] 📋 Proof: ${normalizedProof.length} elements`);
-        console.log(
-          `[Frontend] 📋 Public inputs: ${normalizedPublicInputs.length} elements`
-        );
-
-        // Verify contract is accessible (this also validates the ABI indirectly)
-        console.log("[Frontend] 🔍 Verifying contract accessibility...");
-
-        try {
-          // Create contract instance - if ABI is invalid, this will fail
-          const contract = new Contract(
-            zylithAbi,
-            CONFIG.ZYLITH_CONTRACT,
-            provider
-          );
-
-          // Try to call a known method to verify ABI is working
-          const merkleRoot = await contract.get_merkle_root();
-          console.log(
-            "[Frontend] ✅ Contract is accessible, merkle root:",
-            merkleRoot.toString()
-          );
-
-          // Verify that private_mint_liquidity exists by checking if Contract has the method
-          // Starknet.js Contract will have methods for all functions in the ABI
-          if (!contract.private_mint_liquidity) {
-            // Fallback: Check ABI directly
-            const abiArray = Array.isArray(zylithAbi) ? zylithAbi : [];
-            const method = abiArray.find(
-              (item: any) =>
-                item.name === "private_mint_liquidity" &&
-                item.type === "function"
-            );
-
-            if (!method) {
-              // Log all function names for debugging
-              const allFunctions = abiArray.filter(
-                (item: any) => item.type === "function"
-              );
-              console.error(
-                "[Frontend] ❌ Available functions:",
-                allFunctions.map((f: any) => f.name).join(", ")
-              );
-              throw new Error("❌ private_mint_liquidity not found in ABI!");
-            }
-          }
-
-          console.log("[Frontend] ✅ Contract and ABI verified successfully");
-        } catch (e) {
-          console.error("[Frontend] ❌ Contract verification failed:", e);
-          // Don't throw here - let the actual transaction attempt reveal the real error
-          // The ABI might be fine, but the verification logic might be too strict
-          console.warn(
-            "[Frontend] ⚠️ Continuing despite verification warning - will attempt transaction"
-          );
-        }
 
         // Validate inputs
         const I32_MAX = 2147483647;
@@ -696,7 +564,6 @@ export function useLiquidity() {
           );
         }
 
-        // Validate range
         if (tickLower < I32_MIN || tickLower > I32_MAX) {
           throw new Error(`tickLower ${tickLower} is out of i32 range`);
         }
@@ -704,7 +571,6 @@ export function useLiquidity() {
           throw new Error(`tickUpper ${tickUpper} is out of i32 range`);
         }
 
-        // Validate public_inputs array specifically
         if (normalizedPublicInputs.length !== 7) {
           throw new Error(
             `Invalid public_inputs length: expected 7, got ${normalizedPublicInputs.length}`
@@ -733,127 +599,41 @@ export function useLiquidity() {
           }
         });
 
-        // Convert felt252 to i32 for tick_lower and tick_upper parameters
-        // The contract expects i32 parameters, but public_inputs contain felt252 values
-        // We need to convert felt252 back to JavaScript number for Starknet.js to serialize as i32
-        const FELT_MAX = BigInt(
-          "3618502788666131106986593281521497120414687020801267626233049500247285301248"
-        );
-        const I32_MAX_VAL = 2147483647n;
-        const I32_MIN_VAL = -2147483648n;
-
-        /**
-         * Convert felt252 to i32 JavaScript number
-         * Felt252 negative numbers are represented as: FELT_MAX - abs(value)
-         * We need to convert back to JavaScript number for Starknet.js serialization
-         */
-        const felt252ToI32 = (value: string): number => {
-          const bigValue = BigInt(value);
-
-          // If value is in the upper half of felt252 field, it's negative
-          if (bigValue > FELT_MAX / 2n) {
-            // This is a negative number: convert felt252 to negative i32
-            const negativeValue = bigValue - FELT_MAX;
-
-            // Verify it's within i32 range
-            if (negativeValue < I32_MIN_VAL || negativeValue > I32_MAX_VAL) {
-              throw new Error(
-                `Value ${negativeValue} is out of i32 range (${I32_MIN_VAL} to ${I32_MAX_VAL})`
-              );
-            }
-
-            return Number(negativeValue);
-          } else {
-            // Positive number
-            if (bigValue > I32_MAX_VAL) {
-              throw new Error(
-                `Value ${bigValue} is out of i32 range (${I32_MIN_VAL} to ${I32_MAX_VAL})`
-              );
-            }
-            return Number(bigValue);
-          }
-        };
-
-        // Convert tick values from i32 to felt252 for contract interface
-        // The contract now accepts felt252 instead of i32 (for Starknet.js compatibility)
-        const tickLowerFelt = i32ToFelt252(tickLower);
-        const tickUpperFelt = i32ToFelt252(tickUpper);
-        const liquidityStr = normalizedPublicInputs[4]; // u128 as string (already correct)
-        const newCommitmentStr = normalizedPublicInputs[5]; // felt252 as string (already correct)
-
-        console.log(
-          `[Frontend] 📋 Transaction parameters (i32 → felt252 conversion):`
-        );
-        console.log(
-          `  - tick_lower: ${tickLower} (i32) → ${tickLowerFelt} (felt252)`
-        );
-        console.log(
-          `  - tick_upper: ${tickUpper} (i32) → ${tickUpperFelt} (felt252)`
-        );
-        console.log(`  - liquidity: ${liquidityStr} (u128)`);
-        console.log(`  - new_commitment: ${newCommitmentStr} (felt252)`);
-        console.log(
-          `  - position_commitment: ${normalizedPublicInputs[6]} (felt252)`
-        );
-
-        // Verify that the felt252 values match what's in public_inputs
-        // The contract will verify that public_inputs[2] == tick_lower_felt
-        if (
-          tickLowerFelt !== normalizedPublicInputs[2] ||
-          tickUpperFelt !== normalizedPublicInputs[3]
-        ) {
-          console.warn(
-            `[Frontend] ⚠️  Warning: Converted felt252 values don't match public_inputs!`
-          );
-          console.warn(
-            `  - tick_lower: converted=${tickLowerFelt}, public_inputs[2]=${normalizedPublicInputs[2]}`
-          );
-          console.warn(
-            `  - tick_upper: converted=${tickUpperFelt}, public_inputs[3]=${normalizedPublicInputs[3]}`
-          );
-        }
-
-        // Execute transaction using Contract instance - let Starknet.js handle all serialization
-        // The contract now accepts felt252 for tick_lower and tick_upper (not i32)
-        console.log(
-          `[Frontend] 📋 Executing mint liquidity with Starknet.js Contract instance...`
-        );
-        console.log(`[Frontend] 📋 Parameters:`);
-        console.log(
-          `  - proof: Array<felt252> (${normalizedProof.length} elements)`
-        );
-        console.log(
-          `  - public_inputs: Array<felt252> (${normalizedPublicInputs.length} elements)`
-        );
-        console.log(`  - tick_lower_felt: felt252 = ${tickLowerFelt}`);
-        console.log(`  - tick_upper_felt: felt252 = ${tickUpperFelt}`);
-        console.log(`  - liquidity: u128 = ${liquidityStr}`);
-        console.log(`  - new_commitment: felt252 = ${newCommitmentStr}`);
+        // Extract parameters from public_inputs
+        const liquidityStr = normalizedPublicInputs[4]; // u128 as string
+        const newCommitmentStr = normalizedPublicInputs[5]; // felt252 as string
 
         // Create Contract instance with account as provider
-        // This ensures Starknet.js handles all type serialization automatically
         const contract = new Contract(
           zylithAbi,
           CONFIG.ZYLITH_CONTRACT,
-          account // ← CRITICAL: Pass account as provider for proper serialization
+          account
         );
 
-        // Call the method directly - Starknet.js handles all serialization
-        // Contract now accepts felt252 for tick_lower and tick_upper (not i32)
-        const tx = await contract.private_mint_liquidity(
-          normalizedProof, // Array<felt252> - Starknet.js serializes array correctly
-          normalizedPublicInputs, // Array<felt252> - Starknet.js serializes array correctly
-          tickLowerFelt, // felt252 (string) - Contract converts to i32 internally
-          tickUpperFelt, // felt252 (string) - Contract converts to i32 internally
-          BigInt(liquidityStr), // BigInt - Starknet.js serializes as u128
-          newCommitmentStr // string - Starknet.js serializes as felt252
-        );
-
+        console.log(`[Frontend] 📋 Contract call parameters:`);
+        console.log(`  - proof: ${normalizedProof.length} elements`);
         console.log(
-          `[Frontend] ✅ Transaction sent via Contract instance: ${tx.transaction_hash}`
+          `  - public_inputs: ${normalizedPublicInputs.length} elements`
+        );
+        console.log(`  - tick_lower (i32): ${tickLower}`);
+        console.log(`  - tick_upper (i32): ${tickUpper}`);
+        console.log(`  - liquidity (u128): ${liquidityStr}`);
+        console.log(`  - new_commitment (felt252): ${newCommitmentStr}`);
+
+        // Call the contract method - pass i32 values directly
+        // Starknet.js will handle the serialization to Cairo i32 type
+        const tx = await contract.private_mint_liquidity(
+          normalizedProof,
+          normalizedPublicInputs,
+          tickLower, // Pass as JavaScript number (i32)
+          tickUpper, // Pass as JavaScript number (i32)
+          BigInt(liquidityStr), // u128
+          newCommitmentStr // felt252
         );
 
-        // Step 6: Track transaction
+        console.log(`[Frontend] ✅ Transaction sent: ${tx.transaction_hash}`);
+
+        // Step 7: Track transaction
         addTransaction({
           hash: tx.transaction_hash,
           type: "mint",
@@ -861,33 +641,31 @@ export function useLiquidity() {
           timestamp: Date.now(),
         });
 
-        // Step 7: Wait for transaction
+        // Step 8: Wait for transaction
         await provider.waitForTransaction(tx.transaction_hash);
 
-        // Step 8: Update portfolio
+        // Step 9: Update portfolio
         removeNote(inputNote.commitment);
         addNote(changeNote);
         updateTransaction(tx.transaction_hash, "success");
 
-        // Step 9: Update LP position store
+        // Step 10: Update LP position store
         const positionId = positionCommitment.toString();
         const existingPosition = getPosition(positionId);
 
         if (existingPosition) {
-          // Update existing position - add liquidity
           updatePosition(positionId, {
             liquidity: existingPosition.liquidity + liquidity,
             lastUpdated: Date.now(),
           });
         } else {
-          // Create new position
           addPosition({
             id: positionId,
             tickLower,
             tickUpper,
             liquidity,
-            feeGrowthInside0LastX128: BigInt(0), // Will be updated from contract events
-            feeGrowthInside1LastX128: BigInt(0), // Will be updated from contract events
+            feeGrowthInside0LastX128: BigInt(0),
+            feeGrowthInside1LastX128: BigInt(0),
             tokensOwed0: BigInt(0),
             tokensOwed1: BigInt(0),
             createdAt: Date.now(),
@@ -921,7 +699,6 @@ export function useLiquidity() {
       getPosition,
     ]
   );
-
   /**
    * Burn liquidity (remove liquidity from a position)
    * @param inputNote Note to spend

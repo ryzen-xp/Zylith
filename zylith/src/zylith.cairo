@@ -539,29 +539,24 @@ pub mod Zylith {
             ref self: ContractState,
             proof: Array<felt252>,
             public_inputs: Array<felt252>,
-            tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-            tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_lower: i32,
+            tick_upper: i32,
             liquidity: u128,
             new_commitment: felt252,
         ) -> (u128, u128) {
-            // Convert felt252 to i32 for internal CLMM logic
-            let tick_lower: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_lower_felt);
-            let tick_upper: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_upper_felt);
-            // Step 1 - Verify ZK proof using Garaga LP verifier
-            // Garaga verifier expects full_proof_with_hints = [proof (8 elements) + public_inputs]
-            let mut full_proof_with_hints = proof;
+            // ─────────────────────────────────────────────────────────────
+            // Step 1: Build proof + public inputs
+            // ─────────────────────────────────────────────────────────────
+            let mut full_proof = proof;
             let mut i = 0;
-            let public_inputs_len = public_inputs.len();
-            while i < public_inputs_len {
-                full_proof_with_hints.append(*public_inputs.at(i));
+            while i < public_inputs.len() {
+                full_proof.append(*public_inputs.at(i));
                 i += 1;
             }
 
-            let lp_verifier_addr = self.lp_verifier.read();
-            let verifier = ILPVerifier { contract_address: lp_verifier_addr };
-            let result = verifier.verify_groth16_proof_bn254(full_proof_with_hints.span());
+            let verifier = ILPVerifier { contract_address: self.lp_verifier.read() };
 
-            let _verified_inputs = match result {
+            let verified = match verifier.verify_groth16_proof_bn254(full_proof.span()) {
                 Result::Ok(v) => v,
                 Result::Err(err) => {
                     self
@@ -576,147 +571,79 @@ pub mod Zylith {
                 },
             };
 
-            // Step 2 - Extract verified values from ZK proof
-            // Expected public inputs from LP circuit:
-            // 0: nullifier (to prevent double-spend of input commitment)
-            // 1: root (Merkle root for membership proof)
-            // 2: tick_lower
-            // 3: tick_upper
-            // 4: liquidity amount
-            // 5: new_commitment (for change/remaining balance)
-            // 6: position_commitment (unique identifier for this LP position)
-            assert(_verified_inputs.len() >= 7, 'INVALID_VERIFIED_INPUTS_LEN');
+            assert(verified.len() >= 7, 'INVALID_VERIFIED_INPUTS_LEN');
 
-            // Extract felt252 values from u256
-            // The verifier returns u256, but felt252 values can be >= 2^128
-            // If high == 0, use .low; otherwise use the full u256
-            // Extract felt252 values from u256 - reconstruct full value when high != 0
-            let verified_nullifier_u256 = *_verified_inputs.at(0);
-            let verified_nullifier: felt252 = if verified_nullifier_u256.high == 0 {
-                verified_nullifier_u256.low.try_into().expect('Failed_u128_into_felt252') 
-            } else {
-                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
-                let high_u256: u256 = verified_nullifier_u256.high.into();
-                let low_u256: u256 = verified_nullifier_u256.low.into();
-                let reconstructed: u256 = high_u256 * q128 + low_u256;
-                reconstructed.try_into().expect('Failed_u256_into_felt252') 
-            };
-            let verified_root_u256 = *_verified_inputs.at(1);
-            let verified_root: felt252 = if verified_root_u256.high == 0 {
-                verified_root_u256.low.try_into().expect('Failed_u128_into_felt252') 
-            } else {
-                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
-                let high_u256: u256 = verified_root_u256.high.into();
-                let low_u256: u256 = verified_root_u256.low.into();
-                let reconstructed: u256 = high_u256 * q128 + low_u256;
-                reconstructed.try_into().expect('Failed_u256_into_felt252') 
-            };
-            // Convert u256 to i32 safely (handles two's complement for negative values)
-            let tick_lower_u256 = *_verified_inputs.at(2);
-            let value = tick_lower_u256.low; // u128, must be < 2^32
+            // ─────────────────────────────────────────────────────────────
+            // Step 2: Decode ZK public inputs (ONCE)
+            // ─────────────────────────────────────────────────────────────
 
-            assert(value <= 4294967295, 'TICK_OVERFLOW');
+            let verified_nullifier = InternalFunctionsImpl::u256_to_felt(*verified.at(0));
+            let verified_root = InternalFunctionsImpl::u256_to_felt(*verified.at(1));
+            let verified_tick_lower = InternalFunctionsImpl::u256_to_i32(*verified.at(2));
+            let verified_tick_upper = InternalFunctionsImpl::u256_to_i32(*verified.at(3));
+            let verified_liquidity: u128 = (*verified.at(4)).low;
+            let verified_new_commitment = InternalFunctionsImpl::u256_to_felt(*verified.at(5));
+            let position_commitment = InternalFunctionsImpl::u256_to_felt(*verified.at(6));
 
-            // Step 1: Convert u128 to u32 first (this is safe now)
-            let value_u32: u32 = value.try_into().expect('u32 conversion failed');
-
-            // Step 2: Handle two's complement on u32 (avoiding u128 arithmetic)
-            let verified_tick_lower: i32 = if value_u32 >= 2147483648 {
-                // Negative number: use bitwise complement instead of subtraction
-                let complement = value_u32 ^ 0xFFFFFFFF_u32; // Flip all bits
-                let magnitude = complement + 1_u32; // Add 1
-                let as_i32: i32 = magnitude.try_into().expect('i32 conversion failed');
-                -as_i32
-            } else {
-                // Positive number: direct conversion
-                value_u32.try_into().expect('i32 conversion failed')
-            };
-            let tick_upper_u256 = *_verified_inputs.at(3);
-
-            let verified_tick_upper: i32 = InternalFunctionsImpl::safe_tick_conversion(
-                tick_upper_u256,
+            // ─────────────────────────────────────────────────────────────
+            // Step 3: Validate proof ↔ calldata
+            // ─────────────────────────────────────────────────────────────
+            assert(
+                InternalFunctionsImpl::_is_root_known(ref self, verified_root),
+                'INVALID_MERKLE_ROOT',
             );
 
-            let verified_liquidity: u128 = (*_verified_inputs.at(4)).low;
-            let verified_new_commitment_u256 = *_verified_inputs.at(5);
-            let verified_new_commitment: felt252 = if verified_new_commitment_u256.high == 0 {
-                verified_new_commitment_u256.low.try_into().expect('Failed_u128_into_felt252') 
-            } else {
-                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
-                let high_u256: u256 = verified_new_commitment_u256.high.into();
-                let low_u256: u256 = verified_new_commitment_u256.low.into();
-                let reconstructed: u256 = high_u256 * q128 + low_u256;
-                reconstructed.try_into().expect('Failed_u256_into_felt252') 
-            };
-            let position_commitment_u256 = *_verified_inputs.at(6);
-            let position_commitment: felt252 = if position_commitment_u256.high == 0 {
-                position_commitment_u256.low.try_into().expect('Failed_u128_into_felt252') 
-            } else {
-                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
-                let high_u256: u256 = position_commitment_u256.high.into();
-                let low_u256: u256 = position_commitment_u256.low.into();
-                let reconstructed: u256 = high_u256 * q128 + low_u256;
-                reconstructed.try_into().expect('Failed_u256_into_felt252') 
-            };
-
-            // Step 3 - Validate verified values match call parameters
-            // CRITICAL: Check root is known (current OR historical)
-            let is_valid_root = InternalFunctionsImpl::_is_root_known(ref self, verified_root);
-            assert(is_valid_root, 'INVALID_MERKLE_ROOT');
             assert(verified_tick_lower == tick_lower, 'TICK_LOWER_MISMATCH');
             assert(verified_tick_upper == tick_upper, 'TICK_UPPER_MISMATCH');
             assert(verified_liquidity == liquidity, 'LIQUIDITY_MISMATCH');
             assert(verified_new_commitment == new_commitment, 'COMMITMENT_MISMATCH');
 
-            // Check nullifier hasn't been spent
-            let is_spent = self.nullifiers.spent_nullifiers.entry(verified_nullifier).read();
-            assert(!is_spent, 'NULLIFIER_ALREADY_SPENT');
+            let spent = self.nullifiers.spent_nullifiers.entry(verified_nullifier).read();
+            assert(!spent, 'NULLIFIER_ALREADY_SPENT');
 
-            // Step 4 - Mark nullifier as spent (CEI pattern)
             self.nullifiers.spent_nullifiers.entry(verified_nullifier).write(true);
 
-            // Step 5 - Execute the mint logic (similar to public mint but using commitment-based
-            // ownership)
-            // Note: The actual token amounts are calculated internally, not from the proof
-            // This ensures the CLMM math is correct and not manipulated
+            // ─────────────────────────────────────────────────────────────
+            // Step 4: Mint logic (UNCHANGED)
+            // ─────────────────────────────────────────────────────────────
             assert!(tick_lower < tick_upper);
             assert!(tick_lower % tick::TICK_SPACING == 0);
             assert!(tick_upper % tick::TICK_SPACING == 0);
             assert!(liquidity > 0);
 
-            // Use position_commitment directly as the position key
-            // This ensures each private position has a unique key based on its commitment
-            // The same user can have multiple positions with different position_commitments
-            // Note: position_commitment is a felt252, not a ContractAddress
             let position_key = (position_commitment, tick_lower, tick_upper);
+
             let current_tick = self.pool.tick.read();
             let current_sqrt_price = self.pool.sqrt_price_x128.read();
 
             let sqrt_price_lower = math::get_sqrt_ratio_at_tick(tick_lower);
             let sqrt_price_upper = math::get_sqrt_ratio_at_tick(tick_upper);
 
-            // Calculate actual token amounts needed
             let (amount0_final, amount1_final) = if current_tick < tick_lower {
-                let amount1 = liquidity::get_amount1_for_liquidity(
-                    sqrt_price_lower, sqrt_price_upper, liquidity,
-                );
-                (0, amount1)
+                (
+                    0,
+                    liquidity::get_amount1_for_liquidity(
+                        sqrt_price_lower, sqrt_price_upper, liquidity,
+                    ),
+                )
             } else if current_tick >= tick_upper {
-                let amount0 = liquidity::get_amount0_for_liquidity(
-                    sqrt_price_lower, sqrt_price_upper, liquidity,
-                );
-                (amount0, 0)
+                (
+                    liquidity::get_amount0_for_liquidity(
+                        sqrt_price_lower, sqrt_price_upper, liquidity,
+                    ),
+                    0,
+                )
             } else {
-                let amount0 = liquidity::get_amount0_for_liquidity(
-                    current_sqrt_price, sqrt_price_upper, liquidity,
-                );
-                let amount1 = liquidity::get_amount1_for_liquidity(
-                    sqrt_price_lower, current_sqrt_price, liquidity,
-                );
-                (amount0, amount1)
+                (
+                    liquidity::get_amount0_for_liquidity(
+                        current_sqrt_price, sqrt_price_upper, liquidity,
+                    ),
+                    liquidity::get_amount1_for_liquidity(
+                        sqrt_price_lower, current_sqrt_price, liquidity,
+                    ),
+                )
             };
 
-            // Calculate fee growth inside range
             let fee_growth_inside0 = InternalFunctionsImpl::_get_fee_growth_inside(
                 ref self, tick_lower, tick_upper, true,
             );
@@ -724,55 +651,46 @@ pub mod Zylith {
                 ref self, tick_lower, tick_upper, false,
             );
 
-            // Update position
-            // position_key was already set above using position_commitment
-            let position_info: zylith::clmm::position::PositionInfo = self
+            let position = self.positions.positions.entry(position_key).read();
+
+            self
                 .positions
                 .positions
                 .entry(position_key)
-                .read();
+                .write(
+                    zylith::clmm::position::PositionInfo {
+                        liquidity: position.liquidity + liquidity,
+                        fee_growth_inside0_last_x128: fee_growth_inside0,
+                        fee_growth_inside1_last_x128: fee_growth_inside1,
+                        tokens_owed0: position.tokens_owed0,
+                        tokens_owed1: position.tokens_owed1,
+                    },
+                );
 
-            let updated_position = zylith::clmm::position::PositionInfo {
-                liquidity: position_info.liquidity + liquidity,
-                fee_growth_inside0_last_x128: fee_growth_inside0,
-                fee_growth_inside1_last_x128: fee_growth_inside1,
-                tokens_owed0: position_info.tokens_owed0,
-                tokens_owed1: position_info.tokens_owed1,
-            };
-            self.positions.positions.entry(position_key).write(updated_position);
-
-            // Update ticks
             InternalFunctionsImpl::_update_tick(ref self, tick_lower, liquidity, false);
             InternalFunctionsImpl::_update_tick(ref self, tick_upper, liquidity, true);
 
-            // Update global liquidity if price is in range
             if current_tick >= tick_lower && current_tick < tick_upper {
-                let current_liquidity = self.pool.liquidity.read();
-                self.pool.liquidity.write(current_liquidity + liquidity);
+                let global_liq = self.pool.liquidity.read();
+                self.pool.liquidity.write(global_liq + liquidity);
             }
 
-            // Step 6 - Tokens are already in the contract (from the original private_deposit)
-            // No ERC20 transfers needed here - the user's balance was already deposited privately
-
-            // Step 7 - Insert new commitment for remaining balance
             InternalFunctionsImpl::_insert_commitment(ref self, new_commitment);
 
             (amount0_final, amount1_final)
         }
+
 
         /// Private burn - remove liquidity with ZK proof verification
         fn private_burn_liquidity(
             ref self: ContractState,
             proof: Array<felt252>,
             public_inputs: Array<felt252>,
-            tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-            tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_lower: i32, // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_upper: i32, // ← Changed from i32 to felt252 for Starknet.js compatibility
             liquidity: u128,
             new_commitment: felt252,
         ) -> (u128, u128) {
-            // Convert felt252 to i32 for internal CLMM logic
-            let tick_lower: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_lower_felt);
-            let tick_upper: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_upper_felt);
             // Step 1 - Verify ZK proof using Garaga LP verifier
             // Garaga verifier expects full_proof_with_hints = [proof (8 elements) + public_inputs]
             let mut full_proof_with_hints = proof;
@@ -1491,13 +1409,10 @@ pub mod Zylith {
             ref self: ContractState,
             proof: Array<felt252>,
             public_inputs: Array<felt252>,
-            tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-            tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_lower: i32, // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_upper: i32, // ← Changed from i32 to felt252 for Starknet.js compatibility
             new_commitment: felt252,
         ) -> (u128, u128) {
-            // Convert felt252 to i32 for internal CLMM logic
-            let tick_lower: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_lower_felt);
-            let tick_upper: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_upper_felt);
             // Step 1 - Verify ZK proof using Garaga LP verifier
             // Garaga verifier expects full_proof_with_hints = [proof (8 elements) + public_inputs]
             let mut full_proof_with_hints = proof;
@@ -1684,45 +1599,18 @@ pub mod Zylith {
         /// Handles negative values using Cairo prime field arithmetic
         /// Negative i32 values are represented as: PRIME - abs(value)
         /// This is needed because Starknet.js cannot serialize i32 in ABIs
-        fn _felt252_to_i32(ref self: ContractState, felt: felt252) -> i32 {
-            let value_u256: u256 = felt.into();
-
-            // Constants for 32-bit signed integers
-            let TWO_POW_31: u256 = 2147483648; // 2^31
-            let TWO_POW_32: u256 = 4294967296; // 2^32
-
-            // Validate input range
-            assert(value_u256 < TWO_POW_32, 'Value exceeds i32 range');
-
-            // If highest bit (sign bit) is set → negative
-            if value_u256 >= TWO_POW_31 {
-                // For negative numbers: convert from two's complement
-                // signed_value = value - 2^32
-                let unsigned_diff = TWO_POW_32 - value_u256;
-                let as_i32: Option<i32> = unsigned_diff.low.try_into();
-
-                match as_i32 {
-                    Option::Some(val) => -val,
-                    Option::None => {
-                        assert!(false, "Failed to convert to i32");
-                        0
-                    },
-                }
+        fn u256_to_felt(v: u256) -> felt252 {
+            if v.high == 0 {
+                v.low.try_into().expect('u128_to_felt_failed')
             } else {
-                // Positive number - direct conversion
-                let as_i32: Option<i32> = value_u256.low.try_into();
-
-                match as_i32 {
-                    Option::Some(val) => val,
-                    Option::None => {
-                        assert!(false, "Failed to convert to i32");
-                        0 // Unreachable but needed for type system
-                    },
-                }
+                let q128: u256 = 340282366920938463463374607431768211456; // 2^128
+                let full = v.high.into() * q128 + v.low.into();
+                full.try_into().expect('u256_to_felt_failed')
             }
         }
 
-        fn safe_tick_conversion(tick_value: u256) -> i32 {
+
+        fn u256_to_i32(tick_value: u256) -> i32 {
             // Step 1: Validate range
             if tick_value.high != 0 {
                 assert(false, 'Tick high bits set');
