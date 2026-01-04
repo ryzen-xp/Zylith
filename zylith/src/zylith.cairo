@@ -589,7 +589,7 @@ pub mod Zylith {
 
             // Extract felt252 values from u256
             // The verifier returns u256, but felt252 values can be >= 2^128
-            // If high == 0, use .low; otherwise use the full u256
+            // If high == 0, use .l ow; otherwise use the full u256
             // Extract felt252 values from u256 - reconstruct full value when high != 0
             let verified_nullifier_u256 = *_verified_inputs.at(0);
             let verified_nullifier: felt252 = if verified_nullifier_u256.high == 0 {
