@@ -194,12 +194,13 @@ export class ZylithContractClient {
     amount: bigint
   ) {
     const contract = this.getContract(account);
+    // NOTE: Parameter order changed - arrays moved to end for Argent wallet compatibility
     return await contract.private_withdraw(
-      proof,
-      publicInputs,
       token,
       recipient,
-      amount
+      amount,
+      proof,
+      publicInputs
     );
   }
 

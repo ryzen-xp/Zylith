@@ -1,0 +1,26 @@
+{
+    "profile": "sepolia",
+    "timestamp": "2026-01-17T13:44:30-06:00",
+    "contracts": {
+        "zylith": {
+            "class_hash": "0x0",
+            "address": ""
+        },
+        "membership_verifier": {
+            "class_hash": "0x0",
+            "address": ""
+        },
+        "swap_verifier": {
+            "class_hash": "0x0",
+            "address": ""
+        },
+        "withdraw_verifier": {
+            "class_hash": "0x0",
+            "address": ""
+        },
+        "lp_verifier": {
+            "class_hash": "0x0",
+            "address": ""
+        }
+    }
+}

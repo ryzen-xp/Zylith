@@ -17,50 +17,50 @@ pub trait IZylith<TContractState> {
 
     fn private_swap(
         ref self: TContractState,
-        proof: Array<felt252>,
-        public_inputs: Array<felt252>,
         zero_for_one: bool,
         amount_specified: u128,
         sqrt_price_limit_x128: u256,
         new_commitment: felt252,
+        proof: Array<felt252>,        // ← Moved to end for Argent wallet compatibility
+        public_inputs: Array<felt252>, // ← Moved to end for Argent wallet compatibility
     ) -> (i128, i128);
 
     fn private_withdraw(
         ref self: TContractState,
-        proof: Array<felt252>,
-        public_inputs: Array<felt252>,
         token: ContractAddress,
         recipient: ContractAddress,
         amount: u128,
+        proof: Array<felt252>,        // ← Moved to end for Argent wallet compatibility
+        public_inputs: Array<felt252>, // ← Moved to end for Argent wallet compatibility
     );
 
     fn private_mint_liquidity(
         ref self: TContractState,
-        proof: Array<felt252>,
-        public_inputs: Array<felt252>,
-        tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-        tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+        tick_lower_felt: felt252,
+        tick_upper_felt: felt252,
         liquidity: u128,
         new_commitment: felt252,
+        proof: Array<felt252>,
+        public_inputs: Array<felt252>,
     ) -> (u128, u128);
 
     fn private_burn_liquidity(
         ref self: TContractState,
-        proof: Array<felt252>,
-        public_inputs: Array<felt252>,
-        tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-        tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+        tick_lower_felt: felt252,
+        tick_upper_felt: felt252,
         liquidity: u128,
         new_commitment: felt252,
+        proof: Array<felt252>,
+        public_inputs: Array<felt252>,
     ) -> (u128, u128);
 
     fn private_collect(
         ref self: TContractState,
+        tick_lower_felt: felt252,
+        tick_upper_felt: felt252,
+        new_commitment: felt252,
         proof: Array<felt252>,
         public_inputs: Array<felt252>,
-        tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-        tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-        new_commitment: felt252,
     ) -> (u128, u128);
 
     fn mint(
@@ -87,4 +87,6 @@ pub trait IZylith<TContractState> {
     fn is_root_known(self: @TContractState, root: felt252) -> bool;
 
     fn get_known_roots_count(self: @TContractState) -> u32;
+
+    fn get_version(self: @TContractState) -> felt252;
 }

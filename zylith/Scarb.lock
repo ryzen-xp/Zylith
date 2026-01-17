@@ -10,12 +10,12 @@ checksum = "sha256:a069d7e6b3f4248915c25baa0a68cfa8c2f44d535709be8553badad6a53c2
 [[package]]
 name = "corelib_imports"
 version = "0.1.2"
-source = "git+https://github.com/keep-starknet-strange/garaga.git?branch=main#aa91b6504c86995789edb4e78f9f9ba20571625c"
+source = "git+https://github.com/keep-starknet-strange/garaga.git?branch=main#191ce1908a0424645f34adce635e1573cebe21e6"
 
 [[package]]
 name = "garaga"
 version = "1.0.1"
-source = "git+https://github.com/keep-starknet-strange/garaga.git?branch=main#aa91b6504c86995789edb4e78f9f9ba20571625c"
+source = "git+https://github.com/keep-starknet-strange/garaga.git?branch=main#191ce1908a0424645f34adce635e1573cebe21e6"
 dependencies = [
  "corelib_imports",
 ]

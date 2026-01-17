@@ -44,7 +44,7 @@ npm install
 Create a `.env.local` file:
 
 ```env
-NEXT_PUBLIC_ZYLITH_CONTRACT=0x03a2134229b1938316f0db062a15c79a426df51805f57e8efcf306ef1e916aa6
+NEXT_PUBLIC_ZYLITH_CONTRACT=0x00c692a0a7b34ffe8c5484e6db9488dc881ceae9c9b05d67de21387ea9f3edd6
 NEXT_PUBLIC_ASP_URL=http://localhost:3000
 NEXT_PUBLIC_RPC_URL=https://starknet-sepolia.public.blastapi.io/rpc/v0_7
 ```

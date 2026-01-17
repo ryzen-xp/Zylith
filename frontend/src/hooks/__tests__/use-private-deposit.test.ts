@@ -21,7 +21,7 @@ jest.mock("@/lib/commitment", () => ({
 jest.mock("@/lib/config", () => ({
   CONFIG: {
     ZYLITH_CONTRACT:
-      "0x03a2134229b1938316f0db062a15c79a426df51805f57e8efcf306ef1e916aa6",
+      "0x00c692a0a7b34ffe8c5484e6db9488dc881ceae9c9b05d67de21387ea9f3edd6",
   },
 }));
 
@@ -78,7 +78,7 @@ describe("usePrivateDeposit - Core Logic", () => {
     // Test event parsing logic
     const mockEvent = {
       from_address:
-        "0x03a2134229b1938316f0db062a15c79a426df51805f57e8efcf306ef1e916aa6",
+        "0x00c692a0a7b34ffe8c5484e6db9488dc881ceae9c9b05d67de21387ea9f3edd6",
       keys: [
         "0x9149d2123147c5f43d258257fef0b7b969db78269369ebcf5ebb9eef8592f2",
       ],
@@ -98,7 +98,7 @@ describe("usePrivateDeposit - Core Logic", () => {
     // Test that deposit events have the correct structure
     const validEvent = {
       from_address:
-        "0x03a2134229b1938316f0db062a15c79a426df51805f57e8efcf306ef1e916aa6",
+        "0x00c692a0a7b34ffe8c5484e6db9488dc881ceae9c9b05d67de21387ea9f3edd6",
       keys: [
         "0x9149d2123147c5f43d258257fef0b7b969db78269369ebcf5ebb9eef8592f2",
       ],

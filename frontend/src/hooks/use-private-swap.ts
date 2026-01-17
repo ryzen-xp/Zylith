@@ -766,17 +766,18 @@ export function usePrivateSwap() {
       console.log(`[Frontend] 📋 Proof length: ${proof.length}, Public inputs length: ${publicInputs.length}`);
       
       // Build calldata manually for private_swap
-      // Format: [proof_len, ...proof, public_inputs_len, ...public_inputs, zeroForOne, amountSpecified, sqrtPriceLimitX128.low, sqrtPriceLimitX128.high, newCommitment]
+      // NOTE: Parameter order changed - arrays moved to end for Argent wallet compatibility
+      // Format: [zeroForOne, amountSpecified, sqrtPriceLimitX128.low, sqrtPriceLimitX128.high, newCommitment, proof_len, ...proof, public_inputs_len, ...public_inputs]
       const calldata = [
-        proof.length.toString(),
-        ...proof,
-        publicInputs.length.toString(),
-        ...publicInputs,
         zeroForOne ? "1" : "0",
         amountSpecified.toString(),
         sqrtPriceLimitX128.low.toString(),
         sqrtPriceLimitX128.high.toString(),
-        outputNote.commitment.toString()
+        outputNote.commitment.toString(),
+        proof.length.toString(),
+        ...proof,
+        publicInputs.length.toString(),
+        ...publicInputs
       ];
       
       console.log(`[Frontend] 📋 Calldata length: ${calldata.length}`);

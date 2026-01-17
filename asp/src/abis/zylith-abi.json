@@ -1,12 +1,12 @@
 [
   {
-    "name": "ZylithImpl",
     "type": "impl",
+    "name": "ZylithImpl",
     "interface_name": "zylith::interfaces::izylith::IZylith"
   },
   {
-    "name": "core::integer::u256",
     "type": "struct",
+    "name": "core::integer::u256",
     "members": [
       {
         "name": "low",
@@ -19,8 +19,8 @@
     ]
   },
   {
-    "name": "core::bool",
     "type": "enum",
+    "name": "core::bool",
     "variants": [
       {
         "name": "False",
@@ -33,12 +33,12 @@
     ]
   },
   {
-    "name": "zylith::interfaces::izylith::IZylith",
     "type": "interface",
+    "name": "zylith::interfaces::izylith::IZylith",
     "items": [
       {
-        "name": "initialize",
         "type": "function",
+        "name": "initialize",
         "inputs": [
           {
             "name": "token0",
@@ -65,8 +65,8 @@
         "state_mutability": "external"
       },
       {
-        "name": "private_deposit",
         "type": "function",
+        "name": "private_deposit",
         "inputs": [
           {
             "name": "token",
@@ -85,17 +85,9 @@
         "state_mutability": "external"
       },
       {
-        "name": "private_swap",
         "type": "function",
+        "name": "private_swap",
         "inputs": [
-          {
-            "name": "proof",
-            "type": "core::array::Array::<core::felt252>"
-          },
-          {
-            "name": "public_inputs",
-            "type": "core::array::Array::<core::felt252>"
-          },
           {
             "name": "zero_for_one",
             "type": "core::bool"
@@ -111,6 +103,14 @@
           {
             "name": "new_commitment",
             "type": "core::felt252"
+          },
+          {
+            "name": "proof",
+            "type": "core::array::Array::<core::felt252>"
+          },
+          {
+            "name": "public_inputs",
+            "type": "core::array::Array::<core::felt252>"
           }
         ],
         "outputs": [
@@ -121,17 +121,9 @@
         "state_mutability": "external"
       },
       {
-        "name": "private_withdraw",
         "type": "function",
+        "name": "private_withdraw",
         "inputs": [
-          {
-            "name": "proof",
-            "type": "core::array::Array::<core::felt252>"
-          },
-          {
-            "name": "public_inputs",
-            "type": "core::array::Array::<core::felt252>"
-          },
           {
             "name": "token",
             "type": "core::starknet::contract_address::ContractAddress"
@@ -143,23 +135,23 @@
           {
             "name": "amount",
             "type": "core::integer::u128"
+          },
+          {
+            "name": "proof",
+            "type": "core::array::Array::<core::felt252>"
+          },
+          {
+            "name": "public_inputs",
+            "type": "core::array::Array::<core::felt252>"
           }
         ],
         "outputs": [],
         "state_mutability": "external"
       },
       {
+        "type": "function",
         "name": "private_mint_liquidity",
-        "type": "function",
         "inputs": [
-          {
-            "name": "proof",
-            "type": "core::array::Array::<core::felt252>"
-          },
-          {
-            "name": "public_inputs",
-            "type": "core::array::Array::<core::felt252>"
-          },
           {
             "name": "tick_lower_felt",
             "type": "core::felt252"
@@ -175,6 +167,14 @@
           {
             "name": "new_commitment",
             "type": "core::felt252"
+          },
+          {
+            "name": "proof",
+            "type": "core::array::Array::<core::felt252>"
+          },
+          {
+            "name": "public_inputs",
+            "type": "core::array::Array::<core::felt252>"
           }
         ],
         "outputs": [
@@ -185,17 +185,9 @@
         "state_mutability": "external"
       },
       {
+        "type": "function",
         "name": "private_burn_liquidity",
-        "type": "function",
         "inputs": [
-          {
-            "name": "proof",
-            "type": "core::array::Array::<core::felt252>"
-          },
-          {
-            "name": "public_inputs",
-            "type": "core::array::Array::<core::felt252>"
-          },
           {
             "name": "tick_lower_felt",
             "type": "core::felt252"
@@ -211,6 +203,14 @@
           {
             "name": "new_commitment",
             "type": "core::felt252"
+          },
+          {
+            "name": "proof",
+            "type": "core::array::Array::<core::felt252>"
+          },
+          {
+            "name": "public_inputs",
+            "type": "core::array::Array::<core::felt252>"
           }
         ],
         "outputs": [
@@ -221,17 +221,9 @@
         "state_mutability": "external"
       },
       {
-        "name": "private_collect",
         "type": "function",
+        "name": "private_collect",
         "inputs": [
-          {
-            "name": "proof",
-            "type": "core::array::Array::<core::felt252>"
-          },
-          {
-            "name": "public_inputs",
-            "type": "core::array::Array::<core::felt252>"
-          },
           {
             "name": "tick_lower_felt",
             "type": "core::felt252"
@@ -243,6 +235,14 @@
           {
             "name": "new_commitment",
             "type": "core::felt252"
+          },
+          {
+            "name": "proof",
+            "type": "core::array::Array::<core::felt252>"
+          },
+          {
+            "name": "public_inputs",
+            "type": "core::array::Array::<core::felt252>"
           }
         ],
         "outputs": [
@@ -253,8 +253,8 @@
         "state_mutability": "external"
       },
       {
-        "name": "mint",
         "type": "function",
+        "name": "mint",
         "inputs": [
           {
             "name": "tick_lower",
@@ -277,8 +277,8 @@
         "state_mutability": "external"
       },
       {
-        "name": "swap",
         "type": "function",
+        "name": "swap",
         "inputs": [
           {
             "name": "zero_for_one",
@@ -301,8 +301,8 @@
         "state_mutability": "external"
       },
       {
-        "name": "burn",
         "type": "function",
+        "name": "burn",
         "inputs": [
           {
             "name": "tick_lower",
@@ -325,8 +325,8 @@
         "state_mutability": "external"
       },
       {
-        "name": "collect",
         "type": "function",
+        "name": "collect",
         "inputs": [
           {
             "name": "tick_lower",
@@ -345,8 +345,8 @@
         "state_mutability": "external"
       },
       {
-        "name": "get_merkle_root",
         "type": "function",
+        "name": "get_merkle_root",
         "inputs": [],
         "outputs": [
           {
@@ -356,8 +356,8 @@
         "state_mutability": "view"
       },
       {
-        "name": "is_nullifier_spent",
         "type": "function",
+        "name": "is_nullifier_spent",
         "inputs": [
           {
             "name": "nullifier",
@@ -372,8 +372,8 @@
         "state_mutability": "view"
       },
       {
-        "name": "is_root_known",
         "type": "function",
+        "name": "is_root_known",
         "inputs": [
           {
             "name": "root",
@@ -388,8 +388,8 @@
         "state_mutability": "view"
       },
       {
-        "name": "get_known_roots_count",
         "type": "function",
+        "name": "get_known_roots_count",
         "inputs": [],
         "outputs": [
           {
@@ -397,12 +397,23 @@
           }
         ],
         "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "get_version",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::felt252"
+          }
+        ],
+        "state_mutability": "view"
       }
     ]
   },
   {
-    "name": "constructor",
     "type": "constructor",
+    "name": "constructor",
     "inputs": [
       {
         "name": "owner",
@@ -427,336 +438,336 @@
     ]
   },
   {
-    "kind": "struct",
+    "type": "event",
     "name": "zylith::clmm::pool::Initialize",
-    "type": "event",
+    "kind": "struct",
     "members": [
       {
-        "kind": "data",
         "name": "sqrt_price_x128",
-        "type": "core::integer::u256"
+        "type": "core::integer::u256",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "tick",
-        "type": "core::integer::i32"
+        "type": "core::integer::i32",
+        "kind": "data"
       }
     ]
   },
   {
-    "kind": "struct",
+    "type": "event",
     "name": "zylith::clmm::pool::Swap",
-    "type": "event",
+    "kind": "struct",
     "members": [
       {
-        "kind": "data",
         "name": "sender",
-        "type": "core::starknet::contract_address::ContractAddress"
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "zero_for_one",
-        "type": "core::bool"
+        "type": "core::bool",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "amount0",
-        "type": "core::integer::i128"
+        "type": "core::integer::i128",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "amount1",
-        "type": "core::integer::i128"
+        "type": "core::integer::i128",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "sqrt_price_x128",
-        "type": "core::integer::u256"
+        "type": "core::integer::u256",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "liquidity",
-        "type": "core::integer::u128"
+        "type": "core::integer::u128",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "tick",
-        "type": "core::integer::i32"
+        "type": "core::integer::i32",
+        "kind": "data"
       }
     ]
   },
   {
-    "kind": "struct",
+    "type": "event",
     "name": "zylith::clmm::pool::Mint",
-    "type": "event",
+    "kind": "struct",
     "members": [
       {
-        "kind": "data",
         "name": "sender",
-        "type": "core::starknet::contract_address::ContractAddress"
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "owner",
-        "type": "core::starknet::contract_address::ContractAddress"
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "tick_lower",
-        "type": "core::integer::i32"
+        "type": "core::integer::i32",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "tick_upper",
-        "type": "core::integer::i32"
+        "type": "core::integer::i32",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "amount",
-        "type": "core::integer::u128"
+        "type": "core::integer::u128",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "amount0",
-        "type": "core::integer::u128"
+        "type": "core::integer::u128",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "amount1",
-        "type": "core::integer::u128"
+        "type": "core::integer::u128",
+        "kind": "data"
       }
     ]
   },
   {
-    "kind": "struct",
+    "type": "event",
     "name": "zylith::clmm::pool::Burn",
-    "type": "event",
+    "kind": "struct",
     "members": [
       {
-        "kind": "data",
         "name": "owner",
-        "type": "core::starknet::contract_address::ContractAddress"
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "tick_lower",
-        "type": "core::integer::i32"
+        "type": "core::integer::i32",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "tick_upper",
-        "type": "core::integer::i32"
+        "type": "core::integer::i32",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "amount",
-        "type": "core::integer::u128"
+        "type": "core::integer::u128",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "amount0",
-        "type": "core::integer::u128"
+        "type": "core::integer::u128",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "amount1",
-        "type": "core::integer::u128"
+        "type": "core::integer::u128",
+        "kind": "data"
       }
     ]
   },
   {
-    "kind": "struct",
+    "type": "event",
     "name": "zylith::clmm::pool::Collect",
-    "type": "event",
+    "kind": "struct",
     "members": [
       {
-        "kind": "data",
         "name": "owner",
-        "type": "core::starknet::contract_address::ContractAddress"
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "tick_lower",
-        "type": "core::integer::i32"
+        "type": "core::integer::i32",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "tick_upper",
-        "type": "core::integer::i32"
+        "type": "core::integer::i32",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "amount0",
-        "type": "core::integer::u128"
+        "type": "core::integer::u128",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "amount1",
-        "type": "core::integer::u128"
+        "type": "core::integer::u128",
+        "kind": "data"
       }
     ]
   },
   {
-    "kind": "enum",
+    "type": "event",
     "name": "zylith::clmm::pool::PoolEvent",
-    "type": "event",
+    "kind": "enum",
     "variants": [
       {
-        "kind": "nested",
         "name": "Initialize",
-        "type": "zylith::clmm::pool::Initialize"
+        "type": "zylith::clmm::pool::Initialize",
+        "kind": "nested"
       },
       {
-        "kind": "nested",
         "name": "Swap",
-        "type": "zylith::clmm::pool::Swap"
+        "type": "zylith::clmm::pool::Swap",
+        "kind": "nested"
       },
       {
-        "kind": "nested",
         "name": "Mint",
-        "type": "zylith::clmm::pool::Mint"
+        "type": "zylith::clmm::pool::Mint",
+        "kind": "nested"
       },
       {
-        "kind": "nested",
         "name": "Burn",
-        "type": "zylith::clmm::pool::Burn"
+        "type": "zylith::clmm::pool::Burn",
+        "kind": "nested"
       },
       {
-        "kind": "nested",
         "name": "Collect",
-        "type": "zylith::clmm::pool::Collect"
+        "type": "zylith::clmm::pool::Collect",
+        "kind": "nested"
       }
     ]
   },
   {
-    "kind": "struct",
+    "type": "event",
     "name": "zylith::privacy::deposit::Deposit",
-    "type": "event",
+    "kind": "struct",
     "members": [
       {
-        "kind": "data",
         "name": "commitment",
-        "type": "core::felt252"
+        "type": "core::felt252",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "leaf_index",
-        "type": "core::integer::u32"
+        "type": "core::integer::u32",
+        "kind": "data"
       },
       {
-        "kind": "data",
         "name": "root",
-        "type": "core::felt252"
+        "type": "core::felt252",
+        "kind": "data"
       }
     ]
   },
   {
-    "kind": "struct",
+    "type": "event",
     "name": "zylith::privacy::deposit::NullifierSpent",
-    "type": "event",
+    "kind": "struct",
     "members": [
       {
-        "kind": "data",
         "name": "nullifier",
-        "type": "core::felt252"
+        "type": "core::felt252",
+        "kind": "data"
       }
     ]
   },
   {
-    "kind": "enum",
+    "type": "event",
     "name": "zylith::privacy::deposit::PrivacyEvent",
-    "type": "event",
-    "variants": [
-      {
-        "kind": "nested",
-        "name": "Deposit",
-        "type": "zylith::privacy::deposit::Deposit"
-      },
-      {
-        "kind": "nested",
-        "name": "NullifierSpent",
-        "type": "zylith::privacy::deposit::NullifierSpent"
-      }
-    ]
-  },
-  {
-    "kind": "struct",
-    "name": "zylith::zylith::Zylith::Initialized",
-    "type": "event",
-    "members": [
-      {
-        "kind": "data",
-        "name": "token0",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "kind": "data",
-        "name": "token1",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "kind": "data",
-        "name": "fee",
-        "type": "core::integer::u128"
-      },
-      {
-        "kind": "data",
-        "name": "tick_spacing",
-        "type": "core::integer::i32"
-      },
-      {
-        "kind": "data",
-        "name": "sqrt_price_x128",
-        "type": "core::integer::u256"
-      }
-    ]
-  },
-  {
-    "kind": "struct",
-    "name": "zylith::zylith::Zylith::ProofRejected",
-    "type": "event",
-    "members": [
-      {
-        "kind": "data",
-        "name": "proof_type",
-        "type": "core::felt252"
-      },
-      {
-        "kind": "data",
-        "name": "caller",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "kind": "data",
-        "name": "error",
-        "type": "core::felt252"
-      }
-    ]
-  },
-  {
     "kind": "enum",
-    "name": "zylith::zylith::Zylith::Event",
-    "type": "event",
     "variants": [
       {
-        "kind": "nested",
+        "name": "Deposit",
+        "type": "zylith::privacy::deposit::Deposit",
+        "kind": "nested"
+      },
+      {
+        "name": "NullifierSpent",
+        "type": "zylith::privacy::deposit::NullifierSpent",
+        "kind": "nested"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "zylith::zylith::Zylith::Initialized",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "token0",
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
+      },
+      {
+        "name": "token1",
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
+      },
+      {
+        "name": "fee",
+        "type": "core::integer::u128",
+        "kind": "data"
+      },
+      {
+        "name": "tick_spacing",
+        "type": "core::integer::i32",
+        "kind": "data"
+      },
+      {
+        "name": "sqrt_price_x128",
+        "type": "core::integer::u256",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "zylith::zylith::Zylith::ProofRejected",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "proof_type",
+        "type": "core::felt252",
+        "kind": "data"
+      },
+      {
+        "name": "caller",
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
+      },
+      {
+        "name": "error",
+        "type": "core::felt252",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "zylith::zylith::Zylith::Event",
+    "kind": "enum",
+    "variants": [
+      {
         "name": "PoolEvent",
-        "type": "zylith::clmm::pool::PoolEvent"
+        "type": "zylith::clmm::pool::PoolEvent",
+        "kind": "nested"
       },
       {
-        "kind": "nested",
         "name": "PrivacyEvent",
-        "type": "zylith::privacy::deposit::PrivacyEvent"
+        "type": "zylith::privacy::deposit::PrivacyEvent",
+        "kind": "nested"
       },
       {
-        "kind": "nested",
         "name": "Initialized",
-        "type": "zylith::zylith::Zylith::Initialized"
+        "type": "zylith::zylith::Zylith::Initialized",
+        "kind": "nested"
       },
       {
-        "kind": "nested",
         "name": "ProofRejected",
-        "type": "zylith::zylith::Zylith::ProofRejected"
+        "type": "zylith::zylith::Zylith::ProofRejected",
+        "kind": "nested"
       }
     ]
   }

@@ -1,8 +1,12 @@
 // Zylith Main Contract - Integrates CLMM with ZK Privacy
 // Complete implementation combining all modules
+// Version: 2.0.1 - Argent wallet compatibility (arrays at end of function params)
 
 #[starknet::contract]
 pub mod Zylith {
+    // Contract version for class hash differentiation
+    const CONTRACT_VERSION: felt252 = 2025011702;
+
     use core::array::ArrayTrait;
     use starknet::storage::*;
     use starknet::{ContractAddress, get_caller_address};
@@ -171,12 +175,12 @@ pub mod Zylith {
         /// on-chain execution
         fn private_swap(
             ref self: ContractState,
-            proof: Array<felt252>,
-            public_inputs: Array<felt252>,
             zero_for_one: bool,
             amount_specified: u128,
             sqrt_price_limit_x128: u256,
             new_commitment: felt252,
+            proof: Array<felt252>,        // ← Moved to end for Argent wallet compatibility
+            public_inputs: Array<felt252>, // ← Moved to end for Argent wallet compatibility
         ) -> (i128, i128) {
             // Step 1 - Verify ZK proof using Garaga verifier
             // Garaga verifier expects full_proof_with_hints = [proof (8 elements) + public_inputs
@@ -405,11 +409,11 @@ pub mod Zylith {
         /// Private withdraw with ZK proof verification
         fn private_withdraw(
             ref self: ContractState,
-            proof: Array<felt252>,
-            public_inputs: Array<felt252>,
             token: ContractAddress,
             recipient: ContractAddress,
             amount: u128,
+            proof: Array<felt252>,        // ← Moved to end for Argent wallet compatibility
+            public_inputs: Array<felt252>, // ← Moved to end for Argent wallet compatibility
         ) {
             // Step 1 - Verify ZK proof using Garaga verifier
             // Garaga verifier expects full_proof_with_hints = [proof (8 elements) + public_inputs]
@@ -537,12 +541,12 @@ pub mod Zylith {
         /// but converted to i32 internally for CLMM logic
         fn private_mint_liquidity(
             ref self: ContractState,
-            proof: Array<felt252>,
-            public_inputs: Array<felt252>,
-            tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-            tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_lower_felt: felt252,
+            tick_upper_felt: felt252,
             liquidity: u128,
             new_commitment: felt252,
+            proof: Array<felt252>,
+            public_inputs: Array<felt252>,
         ) -> (u128, u128) {
             // Convert felt252 to i32 for internal CLMM logic
             let tick_lower: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_lower_felt);
@@ -763,12 +767,12 @@ pub mod Zylith {
         /// Private burn - remove liquidity with ZK proof verification
         fn private_burn_liquidity(
             ref self: ContractState,
-            proof: Array<felt252>,
-            public_inputs: Array<felt252>,
-            tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-            tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
+            tick_lower_felt: felt252,
+            tick_upper_felt: felt252,
             liquidity: u128,
             new_commitment: felt252,
+            proof: Array<felt252>,
+            public_inputs: Array<felt252>,
         ) -> (u128, u128) {
             // Convert felt252 to i32 for internal CLMM logic
             let tick_lower: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_lower_felt);
@@ -1276,6 +1280,11 @@ pub mod Zylith {
             self.merkle_tree.known_roots_count.read()
         }
 
+        /// Get contract version
+        fn get_version(self: @ContractState) -> felt252 {
+            CONTRACT_VERSION
+        }
+
         /// Burn liquidity position
         fn burn(
             ref self: ContractState, tick_lower: i32, tick_upper: i32, amount: u128,
@@ -1489,11 +1498,11 @@ pub mod Zylith {
         /// The fees remain in the contract and user can withdraw them privately later
         fn private_collect(
             ref self: ContractState,
+            tick_lower_felt: felt252,
+            tick_upper_felt: felt252,
+            new_commitment: felt252,
             proof: Array<felt252>,
             public_inputs: Array<felt252>,
-            tick_lower_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-            tick_upper_felt: felt252, // ← Changed from i32 to felt252 for Starknet.js compatibility
-            new_commitment: felt252,
         ) -> (u128, u128) {
             // Convert felt252 to i32 for internal CLMM logic
             let tick_lower: i32 = InternalFunctionsImpl::_felt252_to_i32(ref self, tick_lower_felt);
