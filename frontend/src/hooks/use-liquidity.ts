@@ -1074,13 +1074,14 @@ export function useLiquidity() {
             CONFIG.ZYLITH_CONTRACT,
             account
           );
+          // NOTE: Parameter order changed - arrays moved to end for Argent wallet compatibility
           tx = await contract.private_burn_liquidity(
-            proof,
-            publicInputs,
             tickLowerFelt, // felt252 (contract converts to i32 internally)
             tickUpperFelt, // felt252 (contract converts to i32 internally)
             liquidity,
-            outputNote.commitment
+            outputNote.commitment,
+            proof, // Array moved to end
+            publicInputs // Array moved to end
           );
         }
 
@@ -1239,12 +1240,13 @@ export function useLiquidity() {
           account
         );
 
+        // NOTE: Parameter order changed - arrays moved to end for Argent wallet compatibility
         const tx = await contract.private_collect(
-          proof,
-          publicInputs,
           tickLowerFelt, // felt252 (contract converts to i32 internally)
           tickUpperFelt, // felt252 (contract converts to i32 internally)
-          outputNote.commitment
+          outputNote.commitment,
+          proof, // Array moved to end
+          publicInputs // Array moved to end
         );
 
         addTransaction({
